@@ -10,7 +10,7 @@ jobs:
     react-project-image:
         runs-on: ubuntu-latest
         outputs:
-            output1: ${{ steps.upload-dist.outputs.artifact-id }}
+            output1: ${{steps.upload-dist.outputs.artifact-id}}
         steps:
             - name: Check out repository code
               uses: actions/checkout@v7
@@ -46,9 +46,10 @@ jobs:
                   react-app.zip
     on-succes:
         name: "Build image"
-        needs: react-project-image
+        needs: release-app
         runs-on: ubuntu-latest
         steps:
+            - uses: actions/checkout@v7
             - name: Login to docker
               run: echo -n ${{secrets.GITHUB_TOKEN}}| docker login ghcr.io --username ${{github.actor}} --password-stdin
             - name: Download artifact
