@@ -63,7 +63,7 @@ jobs:
     deploy-image:
         name: "Deploy image into server"
         needs: on-succes
-        runs-on: ubuntu:latest
+        runs-on: ubuntu-latest
         steps:
             - name: Pull image from ghcr
               uses: appleboy/ssh-action@v1
