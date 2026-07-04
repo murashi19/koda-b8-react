@@ -7,7 +7,7 @@ export default function ErrorPage() {
 	const error = useRouteError();
 	const { auth } = useContext(AuthContext);
 
-	const homePath = auth.role === "admin" ? "/admin/dashboard" : "/";
+	const homePath = auth? "/admin/dashboard" : "/";
 
 	return (
 		<>
@@ -26,7 +26,6 @@ export default function ErrorPage() {
 					Kembali ke Beranda
 				</Link>
 			</div>
-			);
 		</>
 	);
 }

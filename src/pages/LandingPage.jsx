@@ -4,13 +4,13 @@ import ButtonMessage from "../components/ButtonMessage";
 import Footer from "../components/Footer";
 
 // CONTENT MAIN
-import HeroSection from "../components/Content/HeroSection";
-import CategorySection from "../components/Content/CategorySection";
-import FlashDeal from "../components/Content/FlashSection";
-import CardPromotion from "../components/Content/PromotionSection";
-import NewProduct from "../components/Content/NewProductSection";
-import BestProduct from "../components/Content/BestProductSection";
-import AdvantageSection from "../components/Content/AdvantageSection";
+import HeroSection from "../components/LandingPage/HeroSection";
+import CategorySection from "../components/LandingPage/CategorySection";
+import FlashDeal from "../components/LandingPage/FlashSection";
+import CardPromotion from "../components/LandingPage/PromotionSection";
+import NewProduct from "../components/LandingPage/NewProductSection";
+import BestProduct from "../components/LandingPage/BestProductSection";
+import AdvantageSection from "../components/LandingPage/AdvantageSection";
 
 function LandingPage() {
 	return (

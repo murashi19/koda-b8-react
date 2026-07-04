@@ -3,7 +3,7 @@ import { animateScroll } from "react-scroll";
 import { ChevronRight } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import ProductCard from "../ProductCard";
-import BrowseFilter from "../BrowseFilter";
+import BrowseFilter from "./BrowseFilter";
 
 import useProductFilter from "../../hooks/useProductFilter";
 import usePagination from "../../hooks/usePagination";

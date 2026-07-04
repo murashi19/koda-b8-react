@@ -4,8 +4,8 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ButtonMessage from "../components/ButtonMessage";
-import ProgressBar from "../components/ProgressBar";
-import OrderSummary from "../components/OrderSummary";
+import ProgressBar from "../components/Checkout/ProgressBar";
+import OrderSummary from "../components/Checkout/OrderSummary";
 
 export default function CheckoutLayout() {
 	const location = useLocation();

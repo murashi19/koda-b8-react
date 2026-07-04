@@ -1,4 +1,4 @@
-import StarRating from "./StarsRate";
+import StarRating from "../StarsRate";
 
 const ratingOptions = [5, 4, 3];
 

@@ -3,7 +3,7 @@ import ButtonMessage from "../components/ButtonMessage";
 import Footer from "../components/Footer";
 
 // CONTENT MAIN
-import BrowseMain from "../components/Content/BrowseMain";
+import BrowseMain from "../components/Browse/BrowseMain";
 
 function BrowseProduct() {
 	return (
