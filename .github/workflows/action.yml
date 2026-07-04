@@ -2,8 +2,6 @@ name: Weekly Project
 run-name: ${{github.event.head_commit.messages}}
 on:
     push: 
-        branches:
-            - main
         tags:
             - v*
 jobs:
@@ -42,8 +40,11 @@ jobs:
             - name: Release
               uses: softprops/action-gh-release@v3
               with:
-                files: |
-                  react-app.zip
+                files: react-app.zip
+                overwrite_files: true
+                token: ${{secrets.GITHUB_TOKEN}}
+                tag_name: ${{github.ref_name}}
+                
     on-succes:
         name: "Build image"
         needs: release-app
