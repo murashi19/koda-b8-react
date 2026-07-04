@@ -31,12 +31,6 @@ function MainHeader() {
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	useEffect(() => {
-		if (!isLoggedIn) {
-			navigate("/auth/login");
-		}
-	}, [isLoggedIn, navigate]);
-
 	const handleSearch = (e) => {
 		e.preventDefault();
 		if (query.trim()) {
