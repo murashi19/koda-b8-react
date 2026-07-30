@@ -1,81 +1,79 @@
 name: Weekly Project
 run-name: ${{github.event.head_commit.messages}}
 on:
-    push: 
-        tags:
-            - v*
+  push:
+    tags:
+      - v*
 jobs:
-    react-project-image:
-        runs-on: ubuntu-latest
-        outputs:
-            output1: ${{steps.upload-dist.outputs.artifact-id}}
-        steps:
-            - name: Check out repository code
-              uses: actions/checkout@v7
-            - name: Setup nodejs version
-              uses: actions/setup-node@v6
-              with:
-                node-version: "26.4.0"
-            - name: Installing node dependencies
-              run: npm install
-            - name: build app
-              run: npm run build
-            - name: Save artifact
-              uses: actions/upload-artifact@v7
-              with: 
-                name: build-result
-                id: upload-dist
-                path: dist/
-    release-app:
-        name: "Release builded app"
-        needs: react-project-image
-        runs-on: ubuntu-latest
-        steps:
-            - name: Download artifact
-              uses: actions/download-artifact@v8
-              with:
-                artifact-ids: ${{needs.react-project-image.outputs.output1}}
-            - name: Compress artifact
-              run: zip -r react-app.zip ./*
-            - name: Release
-              uses: softprops/action-gh-release@v3
-              with:
-                files: react-app.zip
-                overwrite_files: true
-                token: ${{secrets.GITHUB_TOKEN}}
-                tag_name: ${{github.ref_name}}
-                
-    on-succes:
-        name: "Build image"
-        needs: release-app
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v7
-            - name: Login to docker
-              run: echo -n ${{secrets.GITHUB_TOKEN}}| docker login ghcr.io --username ${{github.actor}} --password-stdin
-            - name: Download artifact
-              uses: actions/download-artifact@v8
-              with:
-                artifact-ids: ${{needs.react-project-image.outputs.output1}}
-            - name: Build images
-              run: docker build . -t ghcr.io/${{github.repository}}:latest
-            - name: Push to ghcr.io
-              run: docker push ghcr.io/${{github.repository}}:latest
-    deploy-image:
-        name: "Deploy image into server"
-        needs: on-succes
-        runs-on: ubuntu-latest
-        steps:
-            - name: Pull image from ghcr
-              uses: appleboy/ssh-action@v1
-              with:
-                host: ${{secrets.SSH_HOST}}
-                username: ${{secrets.SSH_USER}}
-                port: ${{secrets.SSH_PORT}}
-                key: ${{secrets.SSH_KEY}}
-                script: |
-                    docker pull ghcr.io/${{github.repository}}:latest
-                    docker rm -f react-app
-                    docker run -d -p 9102:80 --name react-app ghcr.io/${{github.repository}}:latest
+  react-project-image:
+    runs-on: ubuntu-latest
+    outputs:
+      output1: ${{steps.upload-dist.outputs.artifact-id}}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v7
+      - name: Setup nodejs version
+        uses: actions/setup-node@v6
+        with:
+          node-version: "26.4.0"
+      - name: Installing node dependencies
+        run: npm install
+      - name: build app
+        run: npm run build
+      - name: Save artifact
+        uses: actions/upload-artifact@v7
+        id: upload-dist
+        with:
+          name: build-result
+          path: dist/
+  release-app:
+    name: "Release builded app"
+    needs: react-project-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{needs.react-project-image.outputs.output1}}
+      - name: Compress artifact
+        run: zip -r react-app.zip ./*
+      - name: Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: react-app.zip
+          overwrite_files: true
+          token: ${{secrets.GITHUB_TOKEN}}
+          tag_name: ${{github.ref_name}}
 
-
+  on-succes:
+    name: "Build image"
+    needs: release-app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Login to docker
+        run: echo -n ${{secrets.GITHUB_TOKEN}}| docker login ghcr.io --username ${{github.actor}} --password-stdin
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{needs.react-project-image.outputs.output1}}
+      - name: Build images
+        run: docker build . -t ghcr.io/${{github.repository}}:latest
+      - name: Push to ghcr.io
+        run: docker push ghcr.io/${{github.repository}}:latest
+  deploy-image:
+    name: "Deploy image into server"
+    needs: on-succes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull image from ghcr
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{secrets.SSH_HOST}}
+          username: ${{secrets.SSH_USER}}
+          port: ${{secrets.SSH_PORT}}
+          key: ${{secrets.SSH_KEY}}
+          script: |
+            docker pull ghcr.io/${{github.repository}}:latest
+            docker rm -f react-app
+            docker run -d -p 9102:80 --name react-app ghcr.io/${{github.repository}}:latest
