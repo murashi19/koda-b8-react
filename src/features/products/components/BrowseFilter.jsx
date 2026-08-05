@@ -1,0 +1,107 @@
+import StarRating from "@/components/common/StarsRate";
+import { SlidersHorizontal } from "lucide-react";
+
+const ratingOptions = [5, 4, 3];
+
+export default function BrowseFilter({
+  brands,
+  selectedBrands,
+  onBrandChange,
+  selectedRating,
+  onRatingChange,
+  inStock,
+  onStockChange,
+  priceMax,
+  onPriceChange,
+}) {
+  return (
+    <aside className="flex w-full lg:w-64 shrink-0 flex-col gap-6 h-fit card-base p-5 shadow-sm lg:sticky lg:top-40">
+      <div className="flex items-center gap-2 pb-3 border-b border-border">
+        <SlidersHorizontal className="w-4 h-4 text-primary" />
+        <h2 className="font-semibold text-text-primary text-sm">
+          Filter Produk
+        </h2>
+      </div>
+
+      {/* Harga */}
+      <div>
+        <h3 className="font-semibold text-sm text-text-primary mb-3">Harga</h3>
+        <input
+          type="range"
+          min="0"
+          max="20000000"
+          step="50000"
+          value={priceMax}
+          onChange={(e) => onPriceChange(Number(e.target.value))}
+          className="w-full accent-primary"
+        />
+        <div className="flex justify-between text-xs text-text-secondary mt-1">
+          <span>Rp 0</span>
+          <span>Rp {priceMax.toLocaleString("id-ID")}</span>
+        </div>
+      </div>
+
+      {/* Merek */}
+      <div>
+        <h3 className="font-semibold text-sm text-text-primary mb-3">Merek</h3>
+        <div className="flex flex-col gap-2.5">
+          {brands.map((brand) => (
+            <label
+              key={brand}
+              className="flex items-center gap-2 cursor-pointer text-sm text-text-secondary hover:text-text-primary transition-colors duration-300"
+            >
+              <input
+                type="checkbox"
+                checked={selectedBrands.includes(brand)}
+                onChange={() => onBrandChange(brand)}
+                className="accent-primary w-4 h-4 rounded"
+              />
+              <span>{brand}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Rating */}
+      <div>
+        <h3 className="font-semibold text-sm text-text-primary mb-3">
+          Rating Minimum
+        </h3>
+        <div className="flex flex-col gap-2.5">
+          {ratingOptions.map((rating) => (
+            <label
+              key={rating}
+              className="flex items-center gap-2 cursor-pointer text-sm text-text-secondary hover:text-text-primary transition-colors duration-300"
+            >
+              <input
+                className="accent-primary w-4 h-4 cursor-pointer"
+                type="radio"
+                name="rating"
+                checked={selectedRating === rating}
+                onChange={() => onRatingChange(rating)}
+              />
+              <StarRating className="w-3.5 h-3.5" rating={rating} />
+              <span>Ke bawah</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Stock */}
+      <div>
+        <h3 className="font-semibold text-sm text-text-primary mb-3">
+          Ketersediaan
+        </h3>
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-text-secondary hover:text-text-primary transition-colors duration-300">
+          <input
+            type="checkbox"
+            checked={inStock}
+            onChange={onStockChange}
+            className="accent-primary w-4 h-4 rounded"
+          />
+          <span>Stok tersedia</span>
+        </label>
+      </div>
+    </aside>
+  );
+}

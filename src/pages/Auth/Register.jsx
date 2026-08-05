@@ -3,15 +3,14 @@ import { useNavigate } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { registerSchema } from "../../services/validations/registerSchema";
-// import useLocalStorage from "../../hooks/useLocalStorage";
+import { registerSchema } from "@/features/auth/validations/registerSchema";
 
 import { CircleCheckBig, User, Lock, Mail, ArrowRight } from "lucide-react";
 import { PiEyeBold, PiEyeClosed } from "react-icons/pi";
 import { Link } from "react-router-dom";
-import BgImage from "../../assets/img-regis.jpg";
-import Logo from "../../assets/logo.svg";
-import api from "../../api/axios";
+import BgImage from "@/assets/img-regis.jpg";
+import Logo from "@/assets/logo.svg";
+import api from "@/lib/axios";
 
 function Register() {
   const navigate = useNavigate();
@@ -49,6 +48,9 @@ function Register() {
         alert("Email sudah terdaftar");
         return;
       }
+
+      alert(error.response?.data?.message || "Register gagal");
+      console.error(error);
     }
   }
 
@@ -62,15 +64,19 @@ function Register() {
       <div
         className="hidden lg:flex w-full lg:w-1/2 min-h-screen p-10 xl:p-16 bg-cover bg-center flex-col"
         style={{
-          backgroundImage: `linear-gradient(rgba(20,73,230,0.85),rgba(49,44,133,0.85)), url(${BgImage})`,
+          backgroundImage: `linear-gradient(rgba(37,99,235,0.88),rgba(15,23,42,0.92)), url(${BgImage})`,
         }}
       >
         {/* Logo */}
         <div
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-white cursor-pointer"
+          className="flex items-center gap-2 text-white cursor-pointer pl-2"
         >
-          <img src={Logo} alt="Logo BeliMudah" className="w-13 h-13" />
+          <img
+            src={Logo}
+            alt="Logo BeliMudah"
+            className="w-8 md:w-13 h-8 md:h-13 ml-0.5 md:ml-1"
+          />
           <span className="font-semibold text-white text-xl xl:text-2xl whitespace-nowrap">
             BeliMudah
           </span>
@@ -91,13 +97,13 @@ function Register() {
             ].map((item) => (
               <li key={item} className="flex items-start gap-3">
                 <CircleCheckBig className="w-5 h-5 shrink-0 mt-0.5" />
-                <span className="text-gray-200">{item}</span>
+                <span className="text-white">{item}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="text-sm text-gray-300 mt-auto">
+        <p className="text-sm text-text-secondary mt-auto">
           © 2026 BeliMudah. Seluruh hak cipta dilindungi.
         </p>
       </div>
@@ -107,19 +113,19 @@ function Register() {
         {/* Mobile-only logo */}
         <div className="flex lg:hidden items-center gap-2 mb-8 self-start">
           <img src={Logo} alt="Logo BeliMudah" className="w-9 h-9" />
-          <span className="font-semibold text-blue-600 text-xl">BeliMudah</span>
+          <span className="font-semibold text-primary text-xl">BeliMudah</span>
         </div>
 
         <div className="w-full max-w-md flex flex-col gap-3">
           {/* Heading */}
           <div className="mb-1">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary mb-1">
               Buat Akun Baru
             </h2>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-sm sm:text-base text-text-secondary">
               Sudah punya akun?{" "}
               <Link
-                className="ml-1 text-blue-600 font-medium hover:underline"
+                className="ml-1 text-primary font-medium hover:underline"
                 to="/auth/login"
               >
                 Masuk di sini
@@ -131,13 +137,13 @@ function Register() {
           <div className="flex gap-3">
             <button
               type="button"
-              className="flex-1 text-sm text-gray-600 rounded-xl border border-gray-300 py-2.5 hover:bg-gray-50 transition-colors"
+              className="flex-1 text-sm text-text-secondary rounded-xl border border-border py-2.5 hover:bg-surface transition-colors"
             >
               Daftar via Google
             </button>
             <button
               type="button"
-              className="flex-1 text-sm text-gray-600 rounded-xl border border-gray-300 py-2.5 hover:bg-gray-50 transition-colors"
+              className="flex-1 text-sm text-text-secondary rounded-xl border border-border py-2.5 hover:bg-surface transition-colors"
             >
               Daftar via Facebook
             </button>
@@ -145,11 +151,11 @@ function Register() {
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-sm text-gray-400 whitespace-nowrap">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-sm text-text-secondary whitespace-nowrap">
               atau daftar dengan email
             </span>
-            <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex-1 h-px bg-border" />
           </div>
 
           {/* Form */}
@@ -162,12 +168,12 @@ function Register() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="name"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-text-primary"
               >
                 Nama Lengkap
               </label>
-              <div className="flex items-center gap-3 border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                <User className="w-4 h-4 text-gray-400 shrink-0" />
+              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
+                <User className="w-4 h-4 text-text-secondary shrink-0" />
                 <input
                   className="w-full outline-none border-none text-sm bg-transparent"
                   type="text"
@@ -185,12 +191,12 @@ function Register() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-text-primary"
               >
                 Email
               </label>
-              <div className="flex items-center gap-3 border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                <Mail className="w-4 h-4 text-gray-400 shrink-0" />
+              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
+                <Mail className="w-4 h-4 text-text-secondary shrink-0" />
                 <input
                   className="w-full outline-none border-none text-sm bg-transparent"
                   type="email"
@@ -208,12 +214,12 @@ function Register() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-text-primary"
               >
                 Kata Sandi
               </label>
-              <div className="flex items-center gap-3 border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                <Lock className="w-4 h-4 text-gray-400 shrink-0" />
+              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
+                <Lock className="w-4 h-4 text-text-secondary shrink-0" />
                 <input
                   className="w-full outline-none border-none text-sm bg-transparent"
                   type={showPassword ? "text" : "password"}
@@ -227,9 +233,9 @@ function Register() {
                   className="shrink-0"
                 >
                   {showPassword ? (
-                    <PiEyeBold className="w-4 h-4 text-gray-400" />
+                    <PiEyeBold className="w-4 h-4 text-text-secondary" />
                   ) : (
-                    <PiEyeClosed className="w-4 h-4 text-gray-400" />
+                    <PiEyeClosed className="w-4 h-4 text-text-secondary" />
                   )}
                 </button>
               </div>
@@ -244,12 +250,12 @@ function Register() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="confirmPassword"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-text-primary"
               >
                 Konfirmasi Kata Sandi
               </label>
-              <div className="flex items-center gap-3 border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                <Lock className="w-4 h-4 text-gray-400 shrink-0" />
+              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
+                <Lock className="w-4 h-4 text-text-secondary shrink-0" />
                 <input
                   className="w-full outline-none border-none text-sm bg-transparent"
                   type={showConfirmPassword ? "text" : "password"}
@@ -263,9 +269,9 @@ function Register() {
                   className="shrink-0"
                 >
                   {showConfirmPassword ? (
-                    <PiEyeBold className="w-4 h-4 text-gray-400" />
+                    <PiEyeBold className="w-4 h-4 text-text-secondary" />
                   ) : (
-                    <PiEyeClosed className="w-4 h-4 text-gray-400" />
+                    <PiEyeClosed className="w-4 h-4 text-text-secondary" />
                   )}
                 </button>
               </div>
@@ -277,18 +283,18 @@ function Register() {
             </div>
 
             {/* Terms checkbox */}
-            <label className="flex items-start gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <label className="flex items-start gap-2 text-sm text-text-secondary cursor-pointer select-none">
               <input
                 type="checkbox"
-                className="mt-0.5 cursor-pointer rounded border-gray-300 shrink-0"
+                className="mt-0.5 cursor-pointer rounded border-border shrink-0"
               />
               <span>
                 Saya menyetujui{" "}
-                <span className="text-blue-600 hover:underline cursor-pointer">
+                <span className="text-primary hover:underline cursor-pointer">
                   Syarat &amp; Ketentuan
                 </span>{" "}
                 dan{" "}
-                <span className="text-blue-600 hover:underline cursor-pointer">
+                <span className="text-primary hover:underline cursor-pointer">
                   Kebijakan Privasi
                 </span>{" "}
                 BeliMudah
@@ -306,7 +312,7 @@ function Register() {
           </form>
 
           {/* Footer note */}
-          <p className="text-xs text-center text-gray-400 flex items-center justify-center gap-1.5">
+          <p className="text-xs text-center text-text-secondary flex items-center justify-center gap-1.5">
             <span>🔒</span>
             <span>Data kamu aman dan terenkripsi</span>
           </p>
