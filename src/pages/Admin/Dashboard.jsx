@@ -60,7 +60,7 @@ const categories = [
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="card-base shadow-sm shadow-lg p-3 text-sm">
+    <div className="card-base shadow-sm p-3 text-sm">
       <p className="font-semibold text-text-primary mb-1">{label}</p>
       <p className="text-primary">
         Pendapatan: Rp {(payload[0]?.value / 1_000_000).toFixed(0)} jt

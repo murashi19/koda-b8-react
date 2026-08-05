@@ -126,7 +126,7 @@ export default function DetailPage() {
         {/* ── Product Layout ── */}
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left: Images */}
-          <div className="w-full lg:w-[36rem] shrink-0">
+          <div className="w-full lg:w-xl shrink-0">
             {/* Main Image */}
             <div className="relative w-full aspect-square rounded-2xl overflow-hidden">
               <img
