@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8081",
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 let isRefreshing = false;
@@ -19,7 +19,6 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Request Interceptor
 api.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem("access_token");
@@ -33,26 +32,22 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response Interceptor
 api.interceptors.response.use(
   (response) => response,
 
   async (error) => {
     const originalRequest = error.config;
 
-    // Kalau bukan 401 langsung return
     if (error.response?.status !== 401) {
       return Promise.reject(error);
     }
 
-    // Hindari infinite loop
     if (originalRequest._retry) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
-    // Kalau sedang refresh, request lain menunggu
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
@@ -69,13 +64,12 @@ api.interceptors.response.use(
     try {
       const refreshToken = localStorage.getItem("refresh_token");
 
-      if (!refreshToken) {
-        throw new Error("Refresh token not found");
-      }
-
-      const response = await axios.post("http://localhost:8080/auth/refresh", {
-        refresh_token: refreshToken,
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/refresh`,
+        {
+          refresh_token: refreshToken,
+        },
+      );
 
       const newAccessToken = response.data.result.access_token;
 
@@ -87,7 +81,7 @@ api.interceptors.response.use(
 
       return api(originalRequest);
     } catch (err) {
-      processQueue(err, null);
+      processQueue(err);
 
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
