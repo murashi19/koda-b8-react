@@ -1,6 +1,4 @@
 @import "tailwindcss";
-<<<<<<< HEAD
-=======
 
 @theme {
   /* Brand palette (from design brief) */
@@ -63,4 +61,3 @@ body {
     background-color: var(--color-accent-dark);
   }
 }
->>>>>>> feat/newVersion
