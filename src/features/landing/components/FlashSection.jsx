@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Zap, Clock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import products from "@/features/products/data/products";
+
 import ProductCard from "@/features/products/components/ProductCard";
+import { fetchProducts } from "@/features/products/productsSlice";
 
 // Countdown timer — mulai dari 5 jam 21 menit 38 detik
 const Timer = 5 * 3600 + 21 * 60 + 38;
@@ -26,10 +28,33 @@ function useCountdown(initialSeconds) {
 export default function FlashDeal() {
   const { h, m, s } = useCountdown(Timer);
 
+  const dispatch = useDispatch();
+  const products = useSelector((state) => state.products.items);
+  const status = useSelector((state) => state.products.status);
+
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchProducts());
+    }
+  }, [status, dispatch]);
+
   // Tampilkan hanya 4 produk pertama
   const flashProducts = products
     .filter((p) => p.tags.includes("flash"))
     .slice(0, 4);
+
+  if (status === "loading" || status === "idle") {
+    return (
+      <section className="container-page px-4 xl:px-0 py-10 text-center text-text-secondary">
+        Memuat produk...
+      </section>
+    );
+  }
+
+  if (status === "failed") {
+    return null;
+  }
+
   return (
     <section className="container-page px-4 xl:px-0 flex flex-col gap-5">
       {/* Header */}

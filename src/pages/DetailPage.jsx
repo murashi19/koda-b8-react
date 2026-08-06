@@ -21,7 +21,13 @@ import useCart from "@/features/cart/useCart";
 import useWishlist from "@/features/wishlist/useWishlist";
 
 // Data
-import { products } from "@/features/products/data/products";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchProducts,
+  fetchProductById,
+  clearProductDetail,
+} from "@/features/products/productsSlice";
+import getProductBadge from "@/utils/getProductBadge";
 import category from "@/features/products/data/category";
 import { animateScroll } from "react-scroll";
 
@@ -38,24 +44,54 @@ const tabs = ["Deskripsi", "Spesifikasi", "Ulasan (2)"];
 // Main Page
 export default function DetailPage() {
   const { id } = useParams();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const product = products.find((p) => String(p.id) === id);
+  const { data: product, status } = useSelector(
+    (state) => state.products.detail,
+  );
+  const { items } = useSelector((state) => state.products);
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
   const [selectedColor, setSelectedColor] = useState("Hitam");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("Deskripsi");
-  const [selectedImg, setSelectedImg] = useState(product?.image);
+  const [selectedImg, setSelectedImg] = useState(null);
+  const [selectedImgId, setSelectedImgId] = useState(id);
 
   useEffect(() => {
-    animateScroll.scrollToTop({
-      duration: 700,
-      smooth: "easeInOutQuart",
-    });
+    dispatch(fetchProductById(id));
+    return () => dispatch(clearProductDetail());
+  }, [id, dispatch]);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      dispatch(fetchProducts());
+    }
+  }, [items.length, dispatch]);
+
+  if (id !== selectedImgId) {
+    setSelectedImgId(id);
+    setSelectedImg(null);
+  }
+  const displayedImg = selectedImg ?? product?.image;
+
+  useEffect(() => {
+    animateScroll.scrollToTop({ duration: 700, smooth: "easeInOutQuart" });
   }, [id]);
 
-  // Produk tidak ditemukan (id tidak valid / tidak ada di data)
-  if (!product) {
+  if (status === "loading" || status === "idle") {
+    return (
+      <>
+        <Header className="fixed" />
+        <main className="container-page px-4 py-20 text-center text-text-secondary">
+          Memuat produk...
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (status === "failed" || !product) {
     return (
       <>
         <Header className="fixed" />
@@ -78,15 +114,14 @@ export default function DetailPage() {
   }
 
   const wishlisted = isWishlisted(product.id);
-  const galleryImages = [product.image];
+  const galleryImages = product.images;
+  const badge = getProductBadge(product);
 
   // Cari slug kategori dari data/category.js (sumber kebenaran yang sama dipakai NavHeader & BrowseMain)
   const productCategory = category.find((cat) => cat.name === product.category);
   const categorySlug = productCategory?.slug ?? "";
 
-  const relatedProducts = products
-    .filter((p) => p.id !== product.id)
-    .slice(0, 4);
+  const relatedProducts = items.filter((p) => p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -130,13 +165,13 @@ export default function DetailPage() {
             {/* Main Image */}
             <div className="relative w-full aspect-square rounded-2xl overflow-hidden">
               <img
-                src={selectedImg}
+                src={displayedImg}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
-              {product.badge && (
+              {badge && (
                 <span className="absolute top-4 left-4 bg-accent text-white text-sm px-3 py-1 rounded-full">
-                  {product.badge}
+                  {badge.label}
                 </span>
               )}
             </div>
@@ -148,7 +183,7 @@ export default function DetailPage() {
                   key={i}
                   type="button"
                   onClick={() => setSelectedImg(img)}
-                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors duration-300 ${selectedImg === img ? "border-primary" : "border-border"}`}
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors duration-300 ${displayedImg === img ? "border-primary" : "border-border"}`}
                 >
                   <img
                     src={img}
@@ -189,16 +224,17 @@ export default function DetailPage() {
             <div className="bg-primary-light rounded-xl px-4 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-[28px] font-bold text-primary leading-10.5">
-                  {product.discountPrice}
+                  {product.discountPriceFormatted ??
+                    product.regularPriceFormatted}
                 </span>
-                {product.regularPrice && (
+                {product.discountPriceFormatted && (
                   <span className="text-lg text-text-secondary line-through">
-                    {product.regularPrice}
+                    {product.regularPriceFormatted}
                   </span>
                 )}
-                {product.badge && (
+                {badge?.type === "discount" && (
                   <span className="bg-accent text-white text-sm px-2.5 py-0.5 rounded-full">
-                    Hemat {product.badge}
+                    Hemat {badge.label}
                   </span>
                 )}
               </div>
@@ -331,17 +367,21 @@ export default function DetailPage() {
 
           {/* Tab Content */}
           <div className="p-6 text-base text-text-secondary leading-relaxed">
-            {activeTab === "Deskripsi" && (
-              <p>
-                Headphone wireless dengan teknologi noise-cancelling terdepan.
-                Nikmati musik favoritmu tanpa gangguan dengan kualitas suara
-                yang memukau.
-              </p>
-            )}
+            {activeTab === "Deskripsi" && <p>{product.description}</p>}
+
             {activeTab === "Spesifikasi" && (
-              <p>Spesifikasi produk akan ditampilkan di sini.</p>
+              <ul className="list-disc list-inside space-y-1">
+                {product.specifications
+                  .split("|")
+                  .map((spec) => spec.trim())
+                  .filter(Boolean)
+                  .map((spec) => (
+                    <li key={spec}>{spec}</li>
+                  ))}
+              </ul>
             )}
-            {activeTab === "Ulasan (2)" && (
+
+            {activeTab.startsWith("Ulasan") && (
               <p>Ulasan pelanggan akan ditampilkan di sini.</p>
             )}
           </div>

@@ -1,4 +1,5 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { animateScroll } from "react-scroll";
 import { ChevronRight } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -8,13 +9,21 @@ import BrowseFilter from "@/features/products/components/BrowseFilter";
 import useProductFilter from "@/features/products/hooks/useProductFilter";
 import usePagination from "@/features/products/hooks/usePagination";
 
-import products from "@/features/products/data/products";
+import { fetchProducts } from "@/features/products/productsSlice";
 import category from "@/features/products/data/category";
 
 export default function BrowseMain() {
   const { slug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const dispatch = useDispatch();
+  const products = useSelector((state) => state.products.items);
+  const status = useSelector((state) => state.products.status);
 
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchProducts());
+    }
+  }, [status, dispatch]);
   // URL State
   const searchQuery = searchParams.get("q") ?? "";
   const selectedBrands = searchParams.getAll("brand");
@@ -95,6 +104,21 @@ export default function BrowseMain() {
   const { displayedData, currentPage, totalPages, hasNextPage, hasPrevPage } =
     usePagination(filteredProducts, page, 16);
 
+  if (status === "loading" || status === "idle") {
+    return (
+      <div className="container-page py-20 text-center text-text-secondary">
+        Memuat produk...
+      </div>
+    );
+  }
+
+  if (status === "failed") {
+    return (
+      <div className="container-page py-20 text-center text-red-500">
+        Gagal memuat produk. Coba muat ulang halaman.
+      </div>
+    );
+  }
   // Early Return
   if (slug && !selectedCategory) {
     return (

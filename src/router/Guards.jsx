@@ -23,6 +23,6 @@ export function ProtectedRoute() {
 export function AdminRoute() {
   const { auth } = useAuth();
   if (!auth) return <Navigate to="/auth/login" replace />;
-  if (auth.role !== "admin") return <Navigate to="/" replace />;
+  if (auth.role !== "ADMIN") return <Navigate to="/" replace />;
   return <Outlet />;
 }

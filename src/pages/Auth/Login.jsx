@@ -50,8 +50,9 @@ function Login() {
         role: data.role,
       });
 
-      const { token, user } = response.data.result;
-      console.log(user.role);
+      const user = response.data.result;
+      const token = response.data.token;
+
       // Simpan ke redux toolkit & persist
       dispatch(
         login({

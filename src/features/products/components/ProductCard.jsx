@@ -1,14 +1,25 @@
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ImageIcon, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import StarRating from "@/components/common/StarsRate";
 import useCart from "@/features/cart/useCart";
 import useWishlist from "@/features/wishlist/useWishlist";
+import getProductBadge from "@/utils/getProductBadge";
+
+const BADGE_COLOR = {
+  discount: "bg-accent", // merah
+  new: "bg-primary", // biru
+  flash: "bg-orange-500",
+  best: "bg-amber-500",
+  "star-seller": "bg-purple-500",
+  "free-shipping": "bg-emerald-500",
+};
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
 
   const wishlisted = isWishlisted(product.id);
+  const badge = getProductBadge(product);
 
   const handleToggleWishlist = (e) => {
     e.preventDefault();
@@ -28,16 +39,24 @@ export default function ProductCard({ product }) {
       className="group flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
     >
       <div className="relative aspect-square overflow-hidden bg-surface">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        <span
-          className={`absolute top-2 left-2 h-6 min-w-11.25 px-2.5 flex items-center justify-center rounded-full text-xs font-medium text-white ${product.badgeType === "new" ? "bg-primary" : "bg-accent"}`}
-        >
-          {product.badge}
-        </span>
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <ImageIcon className="w-10 h-10 text-gray-400" />
+          </div>
+        )}
+        {badge && (
+          <span
+            className={`absolute top-2 left-2 h-6 min-w-11.25 px-2.5 flex items-center justify-center rounded-full text-xs font-medium text-white ${BADGE_COLOR[badge.type]}`}
+          >
+            {badge.label}
+          </span>
+        )}
         <button
           type="button"
           onClick={handleToggleWishlist}
@@ -65,16 +84,25 @@ export default function ProductCard({ product }) {
             ({product.review})
           </span>
         </div>
-        <div className="flex items-center gap-1.5 mt-auto">
-          <span className="text-base font-bold text-primary">
-            {product.discountPrice}
-          </span>
-          {product.regularPrice && (
-            <span className="text-xs text-text-secondary line-through">
+        {product.discountPrice != 0 ? (
+          <div className="flex items-center gap-1.5 mt-auto">
+            <span className="text-base font-bold text-primary">
+              {product.discountPriceFormatted}
+            </span>
+            {product.regularPrice && (
+              <span className="text-xs text-text-secondary line-through">
+                {product.regularPriceFormatted}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 mt-auto">
+            <span className="text-base font-bold text-primary">
               {product.regularPrice}
             </span>
-          )}
-        </div>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={handleAddToCart}

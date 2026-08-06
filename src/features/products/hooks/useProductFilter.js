@@ -1,10 +1,5 @@
 import { useMemo } from "react";
 
-function parsePrice(price) {
-  if (!price) return 0;
-  return Number(price.replace("Rp", "").replace(/\./g, "").replace(/\s/g, ""));
-}
-
 export default function useProductFilter(
   products,
   category,
@@ -17,7 +12,7 @@ export default function useProductFilter(
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => !category || p.category === category)
-      .filter((p) => parsePrice(p.discountPrice) <= priceMax)
+      .filter((p) => p.discountPrice <= priceMax)
       .filter(
         (p) => selectedBrands.length === 0 || selectedBrands.includes(p.brand),
       )
