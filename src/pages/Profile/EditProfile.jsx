@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { editProfileSchema } from "@/features/profile/validations/editProfileSchema";
 
-import useAuth from "@/features/auth/useAuth";
+import { updateUser } from "@/features/auth/authSlice";
 
 import { Camera, Pencil } from "lucide-react";
 
@@ -41,7 +42,8 @@ async function uploadAvatar(id, file) {
 }
 
 export default function EditProfile() {
-  const { auth, updateAuth } = useAuth();
+  const dispatch = useDispatch();
+  const auth = useSelector((state) => state.auth.user);
   const [isEditing, setIsEditing] = useState(false); // <-- toggle view/edit
   const [selectedImage, setSelectedImage] = useState(auth?.avatar || "");
   const [avatarFile, setAvatarFile] = useState(null);
@@ -95,7 +97,7 @@ export default function EditProfile() {
         updated = await uploadAvatar(auth.id, avatarFile);
       }
 
-      updateAuth(updated);
+      dispatch(updateUser(updated));
       setAvatarFile(null);
       setNotification({
         type: "success",

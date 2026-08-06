@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import useAuth from "@/features/auth/useAuth";
 import useModal from "@/features/modal/useModal";
+import { useSelector } from "react-redux";
 
 export function ProtectedRoute() {
-  const { auth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
   const { showLoginModal } = useModal();
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export function ProtectedRoute() {
 
 // Untuk route admin - redirect langsung, tidak perlu modal
 export function AdminRoute() {
-  const { auth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
   if (!auth) return <Navigate to="/auth/login" replace />;
   if (auth.role !== "ADMIN") return <Navigate to="/" replace />;
   return <Outlet />;

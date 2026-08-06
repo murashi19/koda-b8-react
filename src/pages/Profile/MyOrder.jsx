@@ -1,5 +1,4 @@
 import { useSelector } from "react-redux";
-import useAuth from "@/features/auth/useAuth";
 
 import { FaShoppingCart } from "react-icons/fa";
 
@@ -13,7 +12,7 @@ import ProfileSidebar from "@/features/profile/components/ProfileSidebar";
 import usePagination from "@/features/products/hooks/usePagination";
 
 export default function MyOrder() {
-  const { auth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
 
   // Ambil semua order dari Redux, filter hanya milik user yang sedang login
   const allOrders = useSelector((state) => state.orders.orders);

@@ -4,11 +4,12 @@ import { IoChevronForward } from "react-icons/io5";
 import { FaSignOutAlt } from "react-icons/fa";
 import { navItems } from "@/components/layout/data/navItem";
 
-import useAuth from "@/features/auth/useAuth";
 import useLocalStorage from "@/hooks/useLocalStorage";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "@/features/auth/authSlice";
 
 function useProfileStats() {
-  const { auth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
   const { data: wishlist } = useLocalStorage("wishlist");
 
   const currentUser = auth && auth.isLogin;
@@ -22,7 +23,9 @@ function useProfileStats() {
 export default function ProfileSidebar({ activeNav }) {
   const navigate = useNavigate();
   const { orderCount, wishlistCount } = useProfileStats();
-  const { auth, setAuth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
+
   const { data: users, updateUserById } = useLocalStorage("users");
 
   const character = auth?.name?.charAt(0).toUpperCase();
@@ -36,7 +39,7 @@ export default function ProfileSidebar({ activeNav }) {
       user.id === auth.id ? { ...user, isLogin: false } : user,
     );
     updateUserById(updated);
-    setAuth(null);
+    dispatch(logout());
     navigate("/auth/login");
   };
 

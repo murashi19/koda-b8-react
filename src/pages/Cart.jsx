@@ -8,20 +8,20 @@ import { products } from "@/features/products/data/products";
 // Hooks (Redux)
 import useCart from "@/features/cart/useCart";
 import useWishlist from "@/features/wishlist/useWishlist";
-import useAuth from "@/features/auth/useAuth";
-
+import { updateUser } from "@/features/auth/authSlice";
 // Components
 import Header from "@/components/layout/Header/index";
 import ButtonMessage from "@/components/common/ButtonMessage";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/features/products/components/ProductCard";
+import { useDispatch, useSelector } from "react-redux";
 
 // Main Page
 export default function Cart() {
   const navigate = useNavigate();
   const [voucher, setVoucher] = useState("");
-
-  const { auth, updateAuth } = useAuth();
+  const dispatch = useDispatch();
+  const auth = useSelector((state) => state.auth.user);
   const { cart, updateCartQty, removeFromCart } = useCart();
   const { isWishlisted } = useWishlist();
 
@@ -46,7 +46,7 @@ export default function Cart() {
       : [...currentWishlist, item];
     const newCart = currentCart.filter((c) => c.id !== item.id);
 
-    updateAuth({ wishlist: newWishlist, cart: newCart });
+    dispatch(updateUser({ wishlist: newWishlist, cart: newCart }));
   };
 
   const relatedProducts = products.slice(0, 4);

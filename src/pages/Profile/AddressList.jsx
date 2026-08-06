@@ -9,27 +9,33 @@ import ProfileSidebar from "@/features/profile/components/ProfileSidebar";
 import AddressModal from "@/features/profile/components/AddressModal";
 
 // Hooks (Redux)
-import useAuth from "@/features/auth/useAuth";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUser } from "@/features/auth/authSlice";
 
 // Main Page
 export default function AddressList() {
-  const { auth, updateAuth } = useAuth();
+  const dispatch = useDispatch();
+  const auth = useSelector((state) => state.auth.user);
   const addresses = auth?.addresses ?? [];
   const [modalMode, setModalMode] = useState(null);
 
   const handleSetMain = (id) => {
-    updateAuth({
-      addresses: addresses.map((address) => ({
-        ...address,
-        isMain: address.id === id,
-      })),
-    });
+    dispatch(
+      updateUser({
+        addresses: addresses.map((address) => ({
+          ...address,
+          isMain: address.id === id,
+        })),
+      }),
+    );
   };
 
   const handleDelete = (id) => {
-    updateAuth({
-      addresses: addresses.filter((address) => address.id !== id),
-    });
+    dispatch(
+      updateUser({
+        addresses: addresses.filter((address) => address.id !== id),
+      }),
+    );
   };
 
   const handleAdd = (formData) => {
@@ -39,19 +45,23 @@ export default function AddressList() {
       isMain: addresses.length === 0,
     };
 
-    updateAuth({
-      addresses: [...addresses, newAddress],
-    });
+    dispatch(
+      updateUser({
+        addresses: [...addresses, newAddress],
+      }),
+    );
 
     setModalMode(null);
   };
 
   const handleEdit = (updatedAddress) => {
-    updateAuth({
-      addresses: addresses.map((address) =>
-        address.id === updatedAddress.id ? updatedAddress : address,
-      ),
-    });
+    dispatch(
+      updateUser({
+        addresses: addresses.map((address) =>
+          address.id === updatedAddress.id ? updatedAddress : address,
+        ),
+      }),
+    );
 
     setModalMode(null);
   };

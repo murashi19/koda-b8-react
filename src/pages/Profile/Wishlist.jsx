@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from "react";
 import { FaHeart } from "react-icons/fa";
 
@@ -25,12 +24,6 @@ export default function Wishlist() {
     currentPage * ITEMS_PER_PAGE,
   );
 
-  // Kalau halaman aktif jadi kosong setelah produk dihapus dari wishlist, mundur satu halaman
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
   useEffect(() => {
     animateScroll.scrollToTop({
       duration: 700,
