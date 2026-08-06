@@ -47,11 +47,11 @@ function Login() {
       const response = await api.post("/auth/login", {
         email: data.email,
         password: data.password,
+        role: data.role,
       });
 
       const { token, user } = response.data.result;
-      console.log("ini frontend login response", token, user);
-
+      console.log(user.role);
       // Simpan ke redux toolkit & persist
       dispatch(
         login({
