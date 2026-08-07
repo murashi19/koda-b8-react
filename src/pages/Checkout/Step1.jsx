@@ -5,7 +5,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 import { checkoutStep1Schema } from "@/features/checkout/validations/checkoutStep1Schema";
-import useAuth from "@/features/auth/useAuth";
+import { useSelector } from "react-redux";
 
 const shippingOptions = [
   {
@@ -46,7 +46,7 @@ function Label({ children, required }) {
 export default function CheckoutStep1() {
   const navigate = useNavigate();
   const { checkoutData, updateCheckoutData } = useOutletContext();
-  const { auth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
 
   const addresses = auth?.addresses ?? [];
   const hasAddresses = addresses.length > 0;

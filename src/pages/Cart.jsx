@@ -8,22 +8,20 @@ import { products } from "@/features/products/data/products";
 // Hooks (Redux)
 import useCart from "@/features/cart/useCart";
 import useWishlist from "@/features/wishlist/useWishlist";
-import useAuth from "@/features/auth/useAuth";
-
 // Components
 import Header from "@/components/layout/Header/index";
 import ButtonMessage from "@/components/common/ButtonMessage";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/features/products/components/ProductCard";
+import { useSelector } from "react-redux";
 
 // Main Page
 export default function Cart() {
   const navigate = useNavigate();
   const [voucher, setVoucher] = useState("");
-
-  const { auth, updateAuth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
   const { cart, updateCartQty, removeFromCart } = useCart();
-  const { isWishlisted } = useWishlist();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   const parsePrice = (priceStr) =>
     Number(String(priceStr).replace(/[^0-9]/g, ""));
@@ -37,16 +35,10 @@ export default function Cart() {
 
   const handleSaveToWishlist = (item) => {
     if (!auth) return;
-    const currentWishlist = auth.wishlist ?? [];
-    const currentCart = auth.cart ?? [];
-
-    const alreadyWishlisted = currentWishlist.some((w) => w.id === item.id);
-    const newWishlist = alreadyWishlisted
-      ? currentWishlist
-      : [...currentWishlist, item];
-    const newCart = currentCart.filter((c) => c.id !== item.id);
-
-    updateAuth({ wishlist: newWishlist, cart: newCart });
+    if (!isWishlisted(item.id)) {
+      toggleWishlist(item);
+    }
+    removeFromCart(item.id);
   };
 
   const relatedProducts = products.slice(0, 4);

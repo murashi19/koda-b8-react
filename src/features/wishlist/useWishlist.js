@@ -1,14 +1,15 @@
 import { useDispatch, useSelector } from "react-redux";
 import {
-  toggleWishlist as toggleWishlistAction,
+  fetchWishlist,
+  addToWishlist,
   removeFromWishlist as removeFromWishlistAction,
-  clearWishlist as clearWishlistAction,
-} from "@/features/auth/authSlice";
+} from "@/features/wishlist/wishlistSlice";
 import { showLoginModal } from "@/features/modal/modalSlice";
 
 export default function useWishlist() {
   const user = useSelector((state) => state.auth.user);
-  const wishlist = user?.wishlist ?? [];
+  const wishlist = useSelector((state) => state.wishlist.items);
+  const status = useSelector((state) => state.wishlist.status);
   const dispatch = useDispatch();
 
   const isWishlisted = (productId) =>
@@ -23,7 +24,12 @@ export default function useWishlist() {
       );
       return false;
     }
-    dispatch(toggleWishlistAction(product));
+
+    if (isWishlisted(product.id)) {
+      dispatch(removeFromWishlistAction(product.id));
+    } else {
+      dispatch(addToWishlist(product));
+    }
     return true;
   };
 
@@ -32,16 +38,17 @@ export default function useWishlist() {
     dispatch(removeFromWishlistAction(productId));
   };
 
-  const clearWishlist = () => {
+  const loadWishlist = () => {
     if (!user) return;
-    dispatch(clearWishlistAction());
+    dispatch(fetchWishlist());
   };
 
   return {
     wishlist,
+    status,
     toggleWishlist,
     removeFromWishlist,
     isWishlisted,
-    clearWishlist,
+    loadWishlist,
   };
 }

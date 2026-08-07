@@ -1,10 +1,10 @@
 import { Link, useRouteError } from "react-router-dom";
 
-import useAuth from "@/features/auth/useAuth";
+import { useSelector } from "react-redux";
 
 export default function ErrorPage() {
   const error = useRouteError();
-  const { auth } = useAuth();
+  const auth = useSelector((state) => state.auth.user);
   const homePath = auth ? "/admin/dashboard" : "/";
 
   return (

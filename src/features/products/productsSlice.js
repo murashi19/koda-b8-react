@@ -6,7 +6,7 @@ function formatRupiah(value) {
   return `Rp ${number.toLocaleString("id-ID")}`;
 }
 
-function mapProduct(p) {
+export function mapProduct(p) {
   const regularPrice = Number(p.regular_price);
   const discountPrice =
     p.discount_price != null ? Number(p.discount_price) : null;

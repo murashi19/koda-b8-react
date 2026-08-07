@@ -1,7 +1,8 @@
 import { CheckCircle, Shield, Lock } from "lucide-react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import useAuth from "@/features/auth/useAuth";
 import useCart from "@/features/cart/useCart";
+import { useDispatch } from "react-redux";
+import { placeOrder } from "@/features/orders/ordersSlice";
 
 const shippingLabels = {
   "jne-reg": "JNE Reguler · 3-5 hari kerja",
@@ -31,7 +32,7 @@ const formatDate = (date) =>
 export default function CheckoutStep3() {
   const navigate = useNavigate();
   const { checkoutData } = useOutletContext();
-  const { placeOrder } = useAuth();
+  const dispatch = useDispatch();
   const { cart } = useCart();
 
   const { shipping, shippingMethod, paymentMethod } = checkoutData;
@@ -42,23 +43,25 @@ export default function CheckoutStep3() {
   );
 
   const handlePay = () => {
-    const order = placeOrder({
-      id: "BM" + new Date().getTime(),
-      date: formatDate(new Date()),
-      status: "pending",
-      products: cart.map((item) => ({
-        img: item.image,
-        name: item.name,
-        qty: item.qty,
-        price: item.discountPrice,
-      })),
-      total: formatRp(total),
-      totalRaw: total,
-      canReview: false,
-      shipping,
-      shippingMethod,
-      paymentMethod,
-    });
+    const order = dispatch(
+      placeOrder({
+        id: "BM" + new Date().getTime(),
+        date: formatDate(new Date()),
+        status: "pending",
+        products: cart.map((item) => ({
+          img: item.image,
+          name: item.name,
+          qty: item.qty,
+          price: item.discountPrice,
+        })),
+        total: formatRp(total),
+        totalRaw: total,
+        canReview: false,
+        shipping,
+        shippingMethod,
+        paymentMethod,
+      }),
+    );
 
     if (order) {
       navigate(`/success`);
