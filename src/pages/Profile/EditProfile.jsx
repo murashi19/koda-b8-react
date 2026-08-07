@@ -29,13 +29,13 @@ async function updateProfile(id, formData) {
     birth_date: formData.tanggalLahir,
     gender: formData.jenisKelamin,
   };
-  const { data } = await api.patch(`/users/${id}`, payload);
+  const { data } = await api.patch(`/profiles/${id}`, payload);
   return data.data; // updatedProfile dari backend
 }
 async function uploadAvatar(id, file) {
   const form = new FormData();
   form.append("avatar", file);
-  const { data } = await api.put(`/users/${id}/avatar`, form, {
+  const { data } = await api.put(`/profiles/${id}/avatar`, form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data.data; // updatedProfile dengan avatar baru

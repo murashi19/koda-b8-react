@@ -26,9 +26,16 @@ function MainHeader() {
   const auth = useSelector((state) => state.auth.user);
   const token = useSelector((state) => state.auth.token);
   const { cart } = useCart();
-  const { wishlist } = useWishlist();
+  const { wishlist, status: wishlistStatus, loadWishlist } = useWishlist();
 
   const isLoggedIn = auth && token;
+
+  // Load wishlist from backend once per session after login
+  useEffect(() => {
+    if (isLoggedIn && wishlistStatus === "idle") {
+      loadWishlist();
+    }
+  }, [isLoggedIn, wishlistStatus]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

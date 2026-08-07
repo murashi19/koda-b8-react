@@ -23,7 +23,6 @@ export default function Wishlist() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
-
   useEffect(() => {
     animateScroll.scrollToTop({
       duration: 700,

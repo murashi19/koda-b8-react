@@ -4,17 +4,15 @@ import { IoChevronForward } from "react-icons/io5";
 import { FaSignOutAlt } from "react-icons/fa";
 import { navItems } from "@/components/layout/data/navItem";
 
-import useLocalStorage from "@/hooks/useLocalStorage";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/features/auth/authSlice";
+import { clearWishlistState } from "@/features/wishlist/wishlistSlice";
 
 function useProfileStats() {
-  const auth = useSelector((state) => state.auth.user);
-  const { data: wishlist } = useLocalStorage("wishlist");
+  const orders = useSelector((state) => state.orders.orders);
+  const wishlist = useSelector((state) => state.wishlist.items);
 
-  const currentUser = auth && auth.isLogin;
-
-  const orderCount = currentUser?.orders?.length ?? 0;
+  const orderCount = orders?.length ?? 0;
   const wishlistCount = wishlist?.length ?? 0;
 
   return { orderCount, wishlistCount };
@@ -26,8 +24,6 @@ export default function ProfileSidebar({ activeNav }) {
   const auth = useSelector((state) => state.auth.user);
   const dispatch = useDispatch();
 
-  const { data: users, updateUserById } = useLocalStorage("users");
-
   const character = auth?.name?.charAt(0).toUpperCase();
 
   const handleNav = (item) => {
@@ -35,11 +31,8 @@ export default function ProfileSidebar({ activeNav }) {
   };
 
   const handleLogout = () => {
-    const updated = users.map((user) =>
-      user.id === auth.id ? { ...user, isLogin: false } : user,
-    );
-    updateUserById(updated);
     dispatch(logout());
+    dispatch(clearWishlistState());
     navigate("/auth/login");
   };
 

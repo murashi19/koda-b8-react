@@ -16,10 +16,10 @@ export const fetchWishlist = createAsyncThunk(
 
 export const addToWishlist = createAsyncThunk(
   "wishlist/addToWishlist",
-  async (productId, { rejectWithValue }) => {
+  async (product, { rejectWithValue }) => {
     try {
-      await api.post("/wishlist", { product_id: productId }); // ganti ke snake_case
-      return productId;
+      await api.post("/wishlist", { product_id: product.id });
+      return product; // simpan data produk lengkap, bukan cuma id
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
@@ -67,8 +67,8 @@ const wishlistSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(addToWishlist.fulfilled, (state, action) => {
-        if (!state.items.some((item) => item.id === action.payload)) {
-          state.items.push({ id: action.payload });
+        if (!state.items.some((item) => item.id === action.payload.id)) {
+          state.items.push(action.payload);
         }
       })
       .addCase(removeFromWishlist.fulfilled, (state, action) => {

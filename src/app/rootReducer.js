@@ -7,6 +7,8 @@ import orders from "@/features/orders/ordersSlice";
 import products from "@/features/products/productsSlice";
 import dashboard from "@/features/admin/dashboardSlice";
 import modal from "@/features/modal/modalSlice";
+import addresses from "@/features/address/addressSlice";
+import wishlist from "@/features/wishlist/wishlistSlice";
 
 const rootReducer = combineReducers({
   auth,
@@ -14,6 +16,8 @@ const rootReducer = combineReducers({
   products,
   dashboard,
   modal,
+  addresses,
+  wishlist,
 });
 
 const persistConfig = {

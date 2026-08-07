@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 
 export default function ErrorPage() {
   const error = useRouteError();
-  const auth = useSelector();
+  const auth = useSelector((state) => state.auth.user);
   const homePath = auth ? "/admin/dashboard" : "/";
 
   return (
