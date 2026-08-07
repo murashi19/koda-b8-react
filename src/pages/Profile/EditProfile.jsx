@@ -41,6 +41,11 @@ async function uploadAvatar(id, file) {
   return data.data; // updatedProfile dengan avatar baru
 }
 
+async function getProfile(id) {
+  const { data } = await api.get(`/profiles/${id}`);
+  return data.data; // sesuaikan kalau shape response beda
+}
+
 export default function EditProfile() {
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth.user);
@@ -74,6 +79,29 @@ export default function EditProfile() {
 
     return `${thn}-${bln}-${tgl}`;
   };
+
+  useEffect(() => {
+    if (!auth?.id) return;
+    const fetchProfile = async () => {
+      try {
+        const profile = await getProfile(auth.id);
+
+        dispatch(
+          updateUser({
+            full_name: profile.full_name,
+            email: profile.email,
+            telepon: profile.phone_number,
+            tanggalLahir: profile.birth_date,
+            jenisKelamin: profile.gender,
+            avatar: profile.avatar,
+          }),
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchProfile();
+  }, [auth.id, dispatch]);
 
   // Isi form dari data auth yang sedang login
   useEffect(() => {
