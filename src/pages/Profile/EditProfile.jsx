@@ -25,9 +25,9 @@ const displayValueClass = "text-sm font-medium text-text-primary";
 async function updateProfile(id, formData) {
   const payload = {
     full_name: formData.name,
-    phone_number: formData.telepon,
-    birth_date: formData.tanggalLahir,
-    gender: formData.jenisKelamin,
+    phone_number: formData.phone_number,
+    birth_date: formData.birth_date,
+    gender: formData.gender,
   };
   const { data } = await api.patch(`/profiles/${id}`, payload);
   return data.data; // updatedProfile dari backend
@@ -90,9 +90,9 @@ export default function EditProfile() {
           updateUser({
             full_name: profile.full_name,
             email: profile.email,
-            telepon: profile.phone_number,
-            tanggalLahir: profile.birth_date,
-            jenisKelamin: profile.gender,
+            phone_number: profile.phone_number,
+            birth_date: profile.birth_date,
+            gender: profile.gender,
             avatar: profile.avatar,
           }),
         );
@@ -101,7 +101,7 @@ export default function EditProfile() {
       }
     };
     fetchProfile();
-  }, [auth.id, dispatch]);
+  }, [auth?.id, dispatch]);
 
   // Isi form dari data auth yang sedang login
   useEffect(() => {
@@ -109,12 +109,12 @@ export default function EditProfile() {
       reset({
         name: auth.full_name || "",
         email: auth.email || "",
-        telepon: auth.telepon || "",
-        tanggalLahir: formatDate(auth.tanggalLahir) || "",
-        jenisKelamin: auth.jenisKelamin || "",
+        phone_number: auth.phone_number || "",
+        birth_date: formatDate(auth.birth_date) || "",
+        gender: auth.gender || "",
       });
     }
-  }, [auth, auth.email, reset]);
+  }, [auth, auth?.email, reset]);
 
   const handleSave = async (data) => {
     setIsSubmitting(true);
@@ -147,9 +147,9 @@ export default function EditProfile() {
     reset({
       name: auth.full_name || "",
       email: auth.email || "",
-      telepon: auth.telepon || "",
-      tanggalLahir: formatDate(auth.tanggalLahir) || "",
-      jenisKelamin: auth.jenisKelamin || "",
+      phone_number: auth.phone_number || "",
+      birth_date: formatDate(auth.birth_date) || "",
+      gender: auth.gender || "",
     });
     setSelectedImage(auth.avatar || "");
     setAvatarFile(null);
@@ -180,8 +180,8 @@ export default function EditProfile() {
   };
 
   const genderLabel = (value) => {
-    if (value === "laki-laki") return "Laki-laki";
-    if (value === "perempuan") return "Perempuan";
+    if (value === "male") return "Laki-laki";
+    if (value === "female") return "Perempuan";
     return "-";
   };
 
@@ -308,16 +308,16 @@ export default function EditProfile() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className={labelClass}>Nomor Telepon</label>
+                  <label className={labelClass}>Phone Number</label>
                   <input
                     type="tel"
                     placeholder="0812-3456-7890"
                     className={inputClass}
-                    {...register("telepon")}
+                    {...register("phone_number")}
                   />
-                  {errors.telepon && (
+                  {errors.phone_number && (
                     <span className="text-xs text-red-600">
-                      {errors.telepon.message}
+                      {errors.phone_number.message}
                     </span>
                   )}
                 </div>
@@ -327,25 +327,25 @@ export default function EditProfile() {
                   <input
                     type="date"
                     className={inputClass}
-                    {...register("tanggalLahir")}
+                    {...register("birth_date")}
                   />
-                  {errors.tanggalLahir && (
+                  {errors.birth_date && (
                     <span className="text-xs text-red-600">
-                      {errors.tanggalLahir.message}
+                      {errors.birth_date.message}
                     </span>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className={labelClass}>Jenis Kelamin</label>
-                  <select {...register("jenisKelamin")} className={inputClass}>
+                  <select {...register("gender")} className={inputClass}>
                     <option value="">Pilih jenis kelamin</option>
-                    <option value="laki-laki">Laki-laki</option>
-                    <option value="perempuan">Perempuan</option>
+                    <option value="male">Laki-laki</option>
+                    <option value="female">Perempuan</option>
                   </select>
-                  {errors.jenisKelamin && (
+                  {errors.gender && (
                     <span className="text-xs text-red-600">
-                      {errors.jenisKelamin.message}
+                      {errors.gender.message}
                     </span>
                   )}
                 </div>
@@ -379,21 +379,23 @@ export default function EditProfile() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
-                    <span className={displayLabelClass}>Nomor Telepon</span>
+                    <span className={displayLabelClass}>
+                      Nomor phone_number
+                    </span>
                     <span className={displayValueClass}>
-                      {auth?.telepon || "-"}
+                      {auth?.phone_number || "-"}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className={displayLabelClass}>Tanggal Lahir</span>
                     <span className={displayValueClass}>
-                      {formatDate(auth?.tanggalLahir) || "-"}
+                      {formatDate(auth?.birth_date) || "-"}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className={displayLabelClass}>Jenis Kelamin</span>
                     <span className={displayValueClass}>
-                      {genderLabel(auth?.jenisKelamin)}
+                      {genderLabel(auth?.gender)}
                     </span>
                   </div>
                 </div>

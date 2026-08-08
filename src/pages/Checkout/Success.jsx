@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   CircleCheckBig,
   Truck,
@@ -5,14 +6,22 @@ import {
   Package,
   ArrowRight,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import useLocalStorage from "@/hooks/useLocalStorage";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
-const shippingLabels = {
-  "jne-reg": "JNE Reguler",
-  "jne-exp": "JNE Express",
-  "same-day": "Same Day Delivery",
-};
+import { fetchOrders, fetchOrderDetail } from "@/features/orders/ordersSlice";
+import { fetchAddresses } from "@/features/address/addressSlice";
+import { SHIPPING_METHOD_LABELS } from "@/features/checkout/data/shippingMethods";
+
+const formatRp = (n) => "Rp " + Number(n ?? 0).toLocaleString("id-ID");
+const formatDate = (iso) =>
+  iso
+    ? new Date(iso).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "-";
 
 const orderStatuses = [
   {
@@ -57,16 +66,52 @@ const orderStatuses = [
 
 export default function CheckoutSuccess() {
   const navigate = useNavigate();
-  const { data: orders } = useLocalStorage("orders");
-  console.log("DEBUG orders:", orders);
+  const location = useLocation();
+  const dispatch = useDispatch();
 
-  const order = orders[orders.length - 1];
-  console.log("DEBUG order (terakhir):", order);
+  // orderId dikirim dari Step3 lewat navigate state pas baru saja checkout.
+  // Kalau halaman ini di-refresh (state hilang), fallback ke order paling baru milik user.
+  const orderIdFromNav = location.state?.orderId ?? null;
+
+  const { orders, status: ordersStatus, detailsById } = useSelector(
+    (state) => state.orders,
+  );
+  const addresses = useSelector((state) => state.addresses.items);
+  const addressesStatus = useSelector((state) => state.addresses.status);
+  const auth = useSelector((state) => state.auth.user);
+
+  const orderId = orderIdFromNav ?? orders[0]?.id ?? null;
+  // detailsById sudah punya items (diisi langsung dari response checkout / fetchOrderDetail)
+  const order = orderId
+    ? (detailsById[orderId] ?? orders.find((o) => o.id === orderId))
+    : null;
+
+  useEffect(() => {
+    if (ordersStatus === "idle") dispatch(fetchOrders());
+  }, [ordersStatus, dispatch]);
+
+  useEffect(() => {
+    if (addressesStatus === "idle") dispatch(fetchAddresses());
+  }, [addressesStatus, dispatch]);
+
+  // Kalau ID order sudah diketahui tapi detail (items)-nya belum ada di cache, ambil dari server.
+  useEffect(() => {
+    if (orderId && !detailsById[orderId]) {
+      dispatch(fetchOrderDetail(orderId));
+    }
+  }, [orderId, detailsById, dispatch]);
+
+  const address = order
+    ? addresses.find((a) => a.id === order.addressId)
+    : null;
+
   if (!order) {
     return (
       <main className="min-h-screen bg-surface flex flex-col items-center justify-center gap-4 px-4 py-12">
         <p className="text-text-secondary text-sm">
-          Tidak ada pesanan yang ditemukan.
+          {ordersStatus === "loading"
+            ? "Memuat pesanan..."
+            : "Tidak ada pesanan yang ditemukan."}
         </p>
         <button
           type="button"
@@ -112,7 +157,7 @@ export default function CheckoutSuccess() {
                   No. Pesanan
                 </span>
                 <span className="text-base font-bold text-primary">
-                  #{order?.id}
+                  #{order.orderCode}
                 </span>
               </div>
               <div className="flex flex-col items-end gap-0.5">
@@ -120,7 +165,7 @@ export default function CheckoutSuccess() {
                   Total Pembayaran
                 </span>
                 <span className="text-base font-bold text-text-primary">
-                  {order?.total}
+                  {formatRp(order.total)}
                 </span>
               </div>
             </div>
@@ -137,10 +182,10 @@ export default function CheckoutSuccess() {
                 />
                 <div className="flex flex-col">
                   <span className="text-sm text-text-primary">
-                    {shippingLabels[order.shippingMethod] ?? "-"}
+                    {SHIPPING_METHOD_LABELS[order.shippingMethod] ?? "-"}
                   </span>
                   <span className="text-xs text-text-secondary">
-                    Pesanan dibuat: {order.date}
+                    Pesanan dibuat: {formatDate(order.createdAt)}
                   </span>
                 </div>
               </div>
@@ -151,11 +196,20 @@ export default function CheckoutSuccess() {
                 />
                 <div className="flex flex-col">
                   <span className="text-sm text-text-primary">
-                    Alamat Pengiriman
+                    {auth?.full_name} · {auth?.phone_number}
                   </span>
                   <span className="text-xs text-text-secondary">
-                    {order.shipping?.alamat}, {order.shipping?.kota},{" "}
-                    {order.shipping?.provinsi} {order.shipping?.kodePos}
+                    {address ? (
+                      <>
+                        {address.address}
+                        {address.subdistrict ? `, ${address.subdistrict}` : ""}
+                        {address.district ? `, ${address.district}` : ""}
+                        {`, ${address.city}, ${address.province}`}
+                        {address.postalCode ? ` ${address.postalCode}` : ""}
+                      </>
+                    ) : (
+                      "Alamat tidak ditemukan"
+                    )}
                   </span>
                 </div>
               </div>

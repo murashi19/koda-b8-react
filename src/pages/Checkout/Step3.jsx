@@ -1,70 +1,55 @@
-import { CheckCircle, Shield, Lock } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, Shield, Lock, AlertCircle } from "lucide-react";
 import { useNavigate, useOutletContext } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import useCart from "@/features/cart/useCart";
-import { useDispatch } from "react-redux";
 import { placeOrder } from "@/features/orders/ordersSlice";
+import { SHIPPING_METHODS } from "@/features/checkout/data/shippingMethods";
+import { PAYMENT_METHOD_LABELS as paymentLabels } from "@/features/checkout/data/paymentMethods";
 
-const shippingLabels = {
-  "jne-reg": "JNE Reguler · 3-5 hari kerja",
-  "jne-exp": "JNE Express · 1-2 hari kerja",
-  "same-day": "Same Day Delivery · Hari ini (sebelum 16.00)",
-};
-
-const paymentLabels = {
-  bca: "Virtual Account BCA",
-  bni: "Virtual Account BNI",
-  card: "Kartu Kredit / Debit",
-  gopay: "GoPay",
-  ovo: "OVO",
-  dana: "Dana",
-};
+// Label pengiriman yang lebih detail (label + estimasi), dibangun dari satu
+// sumber data SHIPPING_METHODS supaya tidak ada daftar duplikat yang bisa beda sendiri.
+const shippingLabels = Object.fromEntries(
+  SHIPPING_METHODS.map((m) => [m.id, `${m.label} · ${m.sub}`]),
+);
 
 const formatRp = (n) => "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
-const parsePrice = (priceStr) =>
-  Number(String(priceStr).replace(/[^0-9]/g, ""));
-const formatDate = (date) =>
-  date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 
 export default function CheckoutStep3() {
   const navigate = useNavigate();
   const { checkoutData } = useOutletContext();
   const dispatch = useDispatch();
   const { cart } = useCart();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const { shipping, shippingMethod, paymentMethod } = checkoutData;
-
-  const total = cart.reduce(
-    (sum, item) => sum + parsePrice(item.discountPrice) * item.qty,
-    0,
+  const auth = useSelector((state) => state.auth.user);
+  const address = useSelector((state) =>
+    state.addresses.items.find((a) => a.id === checkoutData.addressId),
   );
 
-  const handlePay = () => {
-    const order = dispatch(
-      placeOrder({
-        id: "BM" + new Date().getTime(),
-        date: formatDate(new Date()),
-        status: "pending",
-        products: cart.map((item) => ({
-          img: item.image,
-          name: item.name,
-          qty: item.qty,
-          price: item.discountPrice,
-        })),
-        total: formatRp(total),
-        totalRaw: total,
-        canReview: false,
-        shipping,
-        shippingMethod,
-        paymentMethod,
-      }),
-    );
+  const { shippingMethod, paymentMethod } = checkoutData;
 
-    if (order) {
-      navigate(`/success`);
+  const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+
+  const handlePay = async () => {
+    setErrorMsg("");
+    setIsSubmitting(true);
+    try {
+      const order = await dispatch(
+        placeOrder({
+          addressId: checkoutData.addressId,
+          shippingMethod,
+          paymentMethod,
+        }),
+      ).unwrap();
+      navigate("/success", { state: { orderId: order.id } });
+    } catch (err) {
+      setErrorMsg(
+        typeof err === "string" ? err : "Gagal memproses pesanan, coba lagi.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -86,11 +71,20 @@ export default function CheckoutStep3() {
             Alamat Pengiriman
           </p>
           <span className="text-sm text-text-secondary">
-            {shipping?.nama} · {shipping?.telepon}
+            {auth?.full_name} · {auth?.phone_number}
           </span>
           <span className="text-sm text-text-secondary">
-            {shipping?.alamat}, {shipping?.kota}, {shipping?.provinsi}{" "}
-            {shipping?.kodePos}
+            {address ? (
+              <>
+                {address.label} — {address.address}
+                {address.subdistrict ? `, ${address.subdistrict}` : ""}
+                {address.district ? `, ${address.district}` : ""}
+                {`, ${address.city}, ${address.province}`}
+                {address.postalCode ? ` ${address.postalCode}` : ""}
+              </>
+            ) : (
+              "Alamat belum dipilih"
+            )}
           </span>
         </div>
 
@@ -133,7 +127,7 @@ export default function CheckoutStep3() {
                 <span className="text-xs text-text-secondary">x{item.qty}</span>
               </div>
               <span className="text-sm font-normal text-primary">
-                {formatRp(parsePrice(item.discountPrice) * item.qty)}
+                {formatRp(item.subtotal)}
               </span>
             </div>
           ))}
@@ -149,22 +143,38 @@ export default function CheckoutStep3() {
           </span>
         </div>
 
+        {errorMsg && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3">
+            <AlertCircle
+              className="w-4 h-4 text-red-500 shrink-0"
+              strokeWidth={2}
+            />
+            <span className="text-xs text-red-600">{errorMsg}</span>
+          </div>
+        )}
+
         {/* Buttons */}
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => navigate("/checkout/step2")}
-            className="w-24 h-12 border border-border rounded-xl text-sm font-medium text-text-primary bg-white hover:bg-surface transition-colors"
+            disabled={isSubmitting}
+            className="w-24 h-12 border border-border rounded-xl text-sm font-medium text-text-primary bg-white hover:bg-surface transition-colors disabled:opacity-60"
           >
             Kembali
           </button>
           <button
             type="button"
             onClick={handlePay}
-            className="flex-1 h-12 rounded-xl btn-primary text-base font-medium flex items-center justify-center gap-2"
+            disabled={isSubmitting || !checkoutData.addressId}
+            className="flex-1 h-12 rounded-xl btn-primary text-base font-medium flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <Lock className="w-5 h-5" strokeWidth={2} />
-            <span>Bayar {formatRp(total)} Sekarang</span>
+            <span>
+              {isSubmitting
+                ? "Memproses..."
+                : `Bayar ${formatRp(total)} Sekarang`}
+            </span>
           </button>
         </div>
       </div>

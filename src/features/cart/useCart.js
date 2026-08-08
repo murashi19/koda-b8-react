@@ -1,15 +1,17 @@
 import { useDispatch, useSelector } from "react-redux";
 import {
+  fetchCart,
   addToCart as addToCartAction,
   removeFromCart as removeFromCartAction,
-  updateCartQty as updateCartQtyAction,
-  clearCart as clearCartAction,
-} from "@/features/auth/authSlice";
+  updateCartQty as updateCartQtyThunk,
+  clearCartLocal,
+} from "@/features/cart/cartSlice";
 import { showLoginModal } from "@/features/modal/modalSlice";
 
 export default function useCart() {
   const user = useSelector((state) => state.auth.user);
-  const cart = user?.cart ?? [];
+  const cart = useSelector((state) => state.cart.items);
+  const status = useSelector((state) => state.cart.status);
   const dispatch = useDispatch();
 
   const addToCart = (product, qty = 1) => {
@@ -21,33 +23,41 @@ export default function useCart() {
       );
       return false;
     }
-    dispatch(addToCartAction(product, qty));
+    dispatch(addToCartAction({ productId: product.id, qty }));
     return true;
   };
 
-  const removeFromCart = (productId) => {
-    if (!user) return;
-    dispatch(removeFromCartAction(productId));
-  };
-
-  const updateCartQty = (productId, qty) => {
+  const updateCartQty = (cartItemId, qty) => {
     if (!user || qty < 1) return;
-    dispatch(updateCartQtyAction(productId, qty));
+    dispatch(updateCartQtyThunk({ cartItemId, qty }));
   };
 
-  const isInCart = (productId) => cart.some((item) => item.id === productId);
+  // cartItemId di sini = id row cart (item.id), bukan productId
+  const removeFromCart = (cartItemId) => {
+    if (!user) return;
+    dispatch(removeFromCartAction(cartItemId));
+  };
+
+  const isInCart = (productId) =>
+    cart.some((item) => item.productId === productId);
+
+  const loadCart = () => {
+    if (!user) return;
+    dispatch(fetchCart());
+  };
 
   const clearCart = () => {
-    if (!user) return;
-    dispatch(clearCartAction());
+    dispatch(clearCartLocal());
   };
 
   return {
     cart,
+    cartStatus: status,
     addToCart,
     removeFromCart,
     updateCartQty,
     isInCart,
+    loadCart,
     clearCart,
   };
 }

@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { CreditCard, ChevronRight, Lock } from "lucide-react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-
-const paymentMethods = [
-  { id: "bca", icon: "🏦", label: "Virtual Account BCA" },
-  { id: "bni", icon: "🏦", label: "Virtual Account BNI" },
-  { id: "card", icon: "💳", label: "Kartu Kredit / Debit" },
-  { id: "gopay", icon: "📱", label: "GoPay" },
-  { id: "ovo", icon: "📱", label: "OVO" },
-  { id: "dana", icon: "📱", label: "Dana" },
-];
+import { PAYMENT_METHODS as paymentMethods } from "@/features/checkout/data/paymentMethods";
 
 export default function CheckoutStep2() {
   const navigate = useNavigate();

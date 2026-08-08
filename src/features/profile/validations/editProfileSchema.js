@@ -15,18 +15,19 @@ export const editProfileSchema = yup.object({
     .email("Format email tidak valid")
     .required("Email wajib diisi"),
 
-  telepon: yup
+  phone_number: yup
     .string()
     .matches(/^(\+62|62|0)[0-9]{9,13}$/, "Nomor telepon tidak valid")
     .nullable(),
 
-  tanggalLahir: yup
+  birth_date: yup
     .date()
     .max(new Date(), "Tanggal lahir tidak valid")
-    .nullable(),
+    .nullable()
+    .typeError("Tanggal lahir tidak valid"),
 
-  jenisKelamin: yup
+  gender: yup
     .string()
-    .oneOf(["laki-laki", "perempuan"], "Pilih jenis kelamin yang valid")
+    .oneOf(["male", "female"], "Pilih jenis kelamin yang valid")
     .nullable(),
 });

@@ -35,6 +35,7 @@ export default function AddressModal({
   onClose,
   onSave,
   isSaving = false,
+  dismissible = true,
 }) {
   const [form, setForm] = useState({ ...emptyForm, ...initialData });
   const [errors, setErrors] = useState({});
@@ -83,14 +84,16 @@ export default function AddressModal({
           <h2 className="font-display text-lg font-bold text-text-primary">
             {isEditMode ? "Edit Alamat" : "Tambah Alamat Baru"}
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface transition-colors disabled:opacity-60"
-          >
-            <IoClose className="w-4.5 h-4.5 text-text-secondary" />
-          </button>
+          {dismissible && (
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface transition-colors disabled:opacity-60"
+            >
+              <IoClose className="w-4.5 h-4.5 text-text-secondary" />
+            </button>
+          )}
         </div>
 
         {/* Form */}
@@ -209,14 +212,16 @@ export default function AddressModal({
 
         {/* Buttons */}
         <div className="flex items-center gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="flex-1 h-11 rounded-xl border border-border text-sm font-medium text-text-primary bg-white hover:bg-surface transition-colors disabled:opacity-60"
-          >
-            Batal
-          </button>
+          {dismissible && (
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="flex-1 h-11 rounded-xl border border-border text-sm font-medium text-text-primary bg-white hover:bg-surface transition-colors disabled:opacity-60"
+            >
+              Batal
+            </button>
+          )}
           <button
             type="button"
             onClick={handleSubmit}

@@ -24,7 +24,7 @@ export default function ProfileSidebar({ activeNav }) {
   const auth = useSelector((state) => state.auth.user);
   const dispatch = useDispatch();
 
-  const character = auth?.name?.charAt(0).toUpperCase();
+  const character = auth?.full_name?.charAt(0).toUpperCase();
 
   const handleNav = (item) => {
     navigate(item.route);
@@ -41,9 +41,9 @@ export default function ProfileSidebar({ activeNav }) {
       {/* Avatar card */}
       <div className="flex flex-col items-center gap-3 card-base p-5 shadow-sm">
         <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-          {auth?.image ? (
+          {auth?.avatar ? (
             <img
-              src={auth.image}
+              src={auth.avatar}
               alt={auth.name}
               className="w-full h-full object-cover"
             />
@@ -53,7 +53,7 @@ export default function ProfileSidebar({ activeNav }) {
         </div>
         <div className="flex flex-col items-center gap-1">
           <h2 className="text-base font-semibold text-text-primary">
-            {auth?.name}
+            {auth?.full_name}
           </h2>
           <span className="text-xs text-text-secondary">{auth?.email}</span>
         </div>

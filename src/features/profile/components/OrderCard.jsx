@@ -1,20 +1,40 @@
 import { useNavigate } from "react-router-dom";
-import { Star } from "lucide-react";
-import { CircleCheckBig, Truck } from "lucide-react";
+import { CircleCheckBig, Truck, Package, Clock, XCircle } from "lucide-react";
+
+const formatRp = (n) => "Rp " + Number(n).toLocaleString("id-ID");
+const formatDate = (iso) =>
+  new Date(iso).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+const STATUS_CONFIG = {
+  PENDING: {
+    label: "Menunggu Pembayaran",
+    icon: Clock,
+    className: "text-text-secondary",
+  },
+  PAID: { label: "Dibayar", icon: CircleCheckBig, className: "text-success" },
+  PROCESSING: { label: "Diproses", icon: Package, className: "text-primary" },
+  SHIPPED: { label: "Dikirim", icon: Truck, className: "text-primary" },
+  DELIVERED: {
+    label: "Terkirim",
+    icon: CircleCheckBig,
+    className: "text-success",
+  },
+  CANCELLED: { label: "Dibatalkan", icon: XCircle, className: "text-red-500" },
+};
 
 function StatusBadge({ status }) {
-  if (status === "sent") {
-    return (
-      <span className="flex items-center gap-1.5 bg-border rounded-full px-3 py-1 text-xs text-success">
-        <CircleCheckBig className="w-3 h-3 text-success" strokeWidth={2} />
-        Terkirim
-      </span>
-    );
-  }
+  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
+  const Icon = config.icon;
   return (
-    <span className="flex items-center gap-1.5 bg-border rounded-full px-3 py-1 text-xs text-primary">
-      <Truck className="w-3 h-3 text-primary" strokeWidth={2} />
-      Dikirim
+    <span
+      className={`flex items-center gap-1.5 bg-border rounded-full px-3 py-1 text-xs ${config.className}`}
+    >
+      <Icon className="w-3 h-3" strokeWidth={2} />
+      {config.label}
     </span>
   );
 }
@@ -22,26 +42,24 @@ function StatusBadge({ status }) {
 export default function OrderCard({ order }) {
   const navigate = useNavigate();
 
-  const displayId = order.orderId ?? order.id;
-
   return (
     <div className="w-full flex flex-col gap-4 rounded-2xl border border-border bg-white p-5">
-      {/* Header */}
       <div className="flex justify-between items-start">
         <div className="flex flex-col gap-0.5">
           <h3 className="text-base font-medium text-text-primary">
-            #{displayId}
+            #{order.orderCode}
           </h3>
-          <span className="text-xs text-text-secondary">{order.date}</span>
+          <span className="text-xs text-text-secondary">
+            {formatDate(order.createdAt)}
+          </span>
         </div>
         <StatusBadge status={order.status} />
       </div>
 
-      {/* Products */}
-      {order.products.map((p, i) => (
-        <div key={i} className="flex items-center gap-3">
+      {(order.items ?? []).map((p) => (
+        <div key={p.productId} className="flex items-center gap-3">
           <img
-            src={p.img}
+            src={p.image}
             alt={p.name}
             className="w-12 h-12 rounded-lg object-cover"
           />
@@ -50,37 +68,29 @@ export default function OrderCard({ order }) {
               {p.name}
             </h3>
             <span className="text-xs text-text-secondary">
-              ×{p.qty} · {p.price}
+              ×{p.qty} · {formatRp(p.price)}
             </span>
           </div>
         </div>
       ))}
 
-      {/* Footer */}
       <div className="flex justify-between items-end pt-3 border-t border-border">
         <div className="flex items-center gap-1.5">
           <span className="text-sm text-text-secondary">Total:</span>
-          <span className="text-sm text-primary">{order.total}</span>
+          <span className="text-sm text-primary">{formatRp(order.total)}</span>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`#`)} ///track/${displayId}
+            onClick={() => navigate(`#`)}
             className="text-sm text-primary border border-primary rounded-lg px-3 py-1.5 hover:bg-primary-light transition-colors"
           >
             Lacak
           </button>
-          {order.canReview && (
-            <button
-              onClick={() => navigate(`#`)} ///review/${displayId}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 transition-colors"
-            >
-              <Star className="w-3 h-3" strokeWidth={2} />
+          {order.status === "DELIVERED" && (
+            <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 transition-colors">
               Beri Ulasan
             </button>
           )}
-          <button className="text-sm font-medium text-text-secondary border border-border rounded-lg px-3 py-1.5 hover:bg-surface transition-colors">
-            Beli Lagi
-          </button>
         </div>
       </div>
     </div>

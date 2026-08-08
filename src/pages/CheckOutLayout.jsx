@@ -12,16 +12,7 @@ export default function CheckoutLayout() {
 
   // Data yang dikumpulkan sepanjang flow checkout (step1 -> step2 -> step3)
   const [checkoutData, setCheckoutData] = useState({
-    shipping: {
-      nama: "",
-      telepon: "",
-      email: "",
-      alamat: "",
-      kota: "",
-      provinsi: "",
-      kodePos: "",
-      catatan: "",
-    },
+    addressId: null,
     shippingMethod: null,
     paymentMethod: null,
   });

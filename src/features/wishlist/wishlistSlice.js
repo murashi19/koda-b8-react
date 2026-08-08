@@ -1,6 +1,7 @@
 import api from "@/lib/axios";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { mapProduct } from "../products/productsSlice";
+import { logout } from "@/features/auth/authSlice";
 
 export const fetchWishlist = createAsyncThunk(
   "wishlist/fetchWishlist",
@@ -16,10 +17,10 @@ export const fetchWishlist = createAsyncThunk(
 
 export const addToWishlist = createAsyncThunk(
   "wishlist/addToWishlist",
-  async (product, { rejectWithValue }) => {
+  async (product, { dispatch, rejectWithValue }) => {
     try {
       await api.post("/wishlist", { product_id: product.id });
-      return product; // simpan data produk lengkap, bukan cuma id
+      await dispatch(fetchWishlist());
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
@@ -70,6 +71,11 @@ const wishlistSlice = createSlice({
         if (!state.items.some((item) => item.id === action.payload.id)) {
           state.items.push(action.payload);
         }
+      })
+      .addCase(logout, (state) => {
+        state.items = [];
+        state.status = "idle";
+        state.error = null;
       })
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.items = state.items.filter((item) => item.id !== action.payload);

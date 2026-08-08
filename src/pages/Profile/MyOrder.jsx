@@ -1,28 +1,26 @@
-import { useSelector } from "react-redux";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-import { FaShoppingCart } from "react-icons/fa";
-
-// Components
 import Header from "@/components/layout/Header/index";
 import ButtonMessage from "@/components/common/ButtonMessage";
 import Footer from "@/components/layout/Footer";
 import OrderCard from "@/features/profile/components/OrderCard";
 import ProfileSidebar from "@/features/profile/components/ProfileSidebar";
+import { FaShoppingCart } from "react-icons/fa";
 
 import usePagination from "@/features/products/hooks/usePagination";
+import { fetchOrders } from "@/features/orders/ordersSlice";
 
 export default function MyOrder() {
-  const auth = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
+  const { orders, status } = useSelector((state) => state.orders);
 
-  // Ambil semua order dari Redux, filter hanya milik user yang sedang login
-  const allOrders = useSelector((state) => state.orders.orders);
-  const userOrders = allOrders.filter((o) => o.userId === auth?.id);
-
-  // Pesanan terbaru ditampilkan paling atas
-  const sortedOrders = [...userOrders].reverse();
+  useEffect(() => {
+    dispatch(fetchOrders());
+  }, [dispatch]);
 
   const { currentPage, setCurrentPage, totalPages, displayedData } =
-    usePagination(sortedOrders, 3);
+    usePagination(orders, 3);
 
   return (
     <>
@@ -38,19 +36,27 @@ export default function MyOrder() {
                 Pesanan Saya
               </h2>
               <span className="text-sm text-text-secondary">
-                {userOrders.length} pesanan
+                {orders.length} pesanan
               </span>
             </div>
 
-            {userOrders.length === 0 ? (
+            {status === "loading" && (
+              <p className="text-sm text-text-secondary py-8 text-center">
+                Memuat pesanan...
+              </p>
+            )}
+
+            {status === "succeeded" && orders.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-text-secondary">
                 <FaShoppingCart className="w-12 h-12" />
                 <p className="text-sm">Belum ada pesanan.</p>
               </div>
-            ) : (
+            )}
+
+            {orders.length > 0 && (
               <>
                 {displayedData.map((order) => (
-                  <OrderCard key={order.orderId} order={order} />
+                  <OrderCard key={order.id} order={order} />
                 ))}
 
                 {totalPages > 1 && (

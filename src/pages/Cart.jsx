@@ -23,20 +23,15 @@ export default function Cart() {
   const { cart, updateCartQty, removeFromCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
-  const parsePrice = (priceStr) =>
-    Number(String(priceStr).replace(/[^0-9]/g, ""));
   const formatRp = (n) => "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
 
   const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-  const subtotal = cart.reduce(
-    (sum, item) => sum + parsePrice(item.discountPrice) * item.qty,
-    0,
-  );
+  const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
   const handleSaveToWishlist = (item) => {
     if (!auth) return;
-    if (!isWishlisted(item.id)) {
-      toggleWishlist(item);
+    if (!isWishlisted(item.productId)) {
+      toggleWishlist({ id: item.productId });
     }
     removeFromCart(item.id);
   };
@@ -136,7 +131,7 @@ export default function Cart() {
                           </button>
                         </div>
                         <span className="text-base text-primary">
-                          {formatRp(parsePrice(item.discountPrice) * item.qty)}
+                          {formatRp(item.subtotal)}
                         </span>
                       </div>
 
@@ -149,8 +144,12 @@ export default function Cart() {
                         <Heart
                           className="w-3 h-3"
                           strokeWidth={3}
-                          stroke={isWishlisted(item.id) ? "#f97316" : "#9ca3af"}
-                          fill={isWishlisted(item.id) ? "#f97316" : "white"}
+                          stroke={
+                            isWishlisted(item.productId) ? "#f97316" : "#9ca3af"
+                          }
+                          fill={
+                            isWishlisted(item.productId) ? "#f97316" : "white"
+                          }
                         />
                         <span>Simpan ke Wishlist</span>
                       </button>

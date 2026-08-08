@@ -27,6 +27,7 @@ import CheckoutSuccess from "@/pages/Checkout/Success";
 import MyOrder from "@/pages/Profile/MyOrder";
 import Wishlist from "@/pages/Profile/Wishlist";
 import AddressList from "@/pages/Profile/AddressList";
+import PaymentMethods from "@/pages/Profile/PaymentMethods";
 import EditProfile from "@/pages/Profile/EditProfile";
 
 // Admin
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
           { path: "/profile/my-orders", element: <MyOrder /> },
           { path: "/profile/wishlist", element: <Wishlist /> },
           { path: "/profile/address-list", element: <AddressList /> },
+          { path: "/profile/payment", element: <PaymentMethods /> },
           { path: "/profile/edit-profile", element: <EditProfile /> },
         ],
       },
