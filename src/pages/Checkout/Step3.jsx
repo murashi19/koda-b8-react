@@ -35,19 +35,29 @@ export default function CheckoutStep3() {
   const handlePay = async () => {
     setErrorMsg("");
     setIsSubmitting(true);
+
+    let order;
     try {
-      const order = await dispatch(
+      order = await dispatch(
         placeOrder({
           addressId: checkoutData.addressId,
           shippingMethod,
           paymentMethod,
         }),
       ).unwrap();
-      navigate("/success", { state: { orderId: order.id } });
     } catch (err) {
+      console.error("placeOrder failed:", err);
       setErrorMsg(
         typeof err === "string" ? err : "Gagal memproses pesanan, coba lagi.",
       );
+      setIsSubmitting(false);
+      return;
+    }
+    try {
+      navigate("/success", { state: { orderId: order.id } });
+    } catch (navErr) {
+      console.error("Order berhasil tapi navigate ke /success gagal:", navErr);
+      navigate("/profile/my-orders");
     } finally {
       setIsSubmitting(false);
     }

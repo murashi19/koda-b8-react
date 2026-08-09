@@ -187,9 +187,7 @@ const ordersSlice = createSlice({
       .addCase(placeOrder.fulfilled, (state, action) => {
         state.placeOrderStatus = "succeeded";
         const order = action.payload;
-        // Tampilin langsung di history tanpa nunggu refetch
         state.orders.unshift(order);
-        // Detail item-nya udah ada dari response checkout, cache sekalian
         state.detailsById[order.id] = order;
         state.detailStatusById[order.id] = "succeeded";
       })
