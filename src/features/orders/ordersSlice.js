@@ -124,6 +124,24 @@ export const placeOrder = createAsyncThunk(
   },
 );
 
+// "Bayar Sekarang" dari daftar pesanan (order status PENDING).
+// Belum ada payment gateway, jadi ini cuma nandain order sebagai sudah dibayar.
+export const payOrder = createAsyncThunk(
+  "orders/payOrder",
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(`/orders/${orderId}/status`, {
+        status: "PAID",
+      });
+      return normalizeOrderSummary(res.data.data);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ?? "Gagal memproses pembayaran",
+      );
+    }
+  },
+);
+
 const ordersSlice = createSlice({
   name: "orders",
   initialState,
@@ -178,6 +196,14 @@ const ordersSlice = createSlice({
       .addCase(placeOrder.rejected, (state, action) => {
         state.placeOrderStatus = "failed";
         state.placeOrderError = action.payload;
+      })
+      .addCase(payOrder.fulfilled, (state, action) => {
+        const updated = action.payload;
+        const order = state.orders.find((o) => o.id === updated.id);
+        if (order) order.status = updated.status;
+        if (state.detailsById[updated.id]) {
+          state.detailsById[updated.id].status = updated.status;
+        }
       })
       .addCase(logout, (state) => {
         state.orders = [];

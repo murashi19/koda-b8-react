@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { CircleCheckBig, Truck, Package, Clock, XCircle } from "lucide-react";
+import { payOrder } from "@/features/orders/ordersSlice";
 
 const formatRp = (n) => "Rp " + Number(n).toLocaleString("id-ID");
 const formatDate = (iso) =>
@@ -41,6 +44,21 @@ function StatusBadge({ status }) {
 
 export default function OrderCard({ order }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState("");
+
+  const handlePayNow = async () => {
+    setIsPaying(true);
+    setPayError("");
+    try {
+      await dispatch(payOrder(order.id)).unwrap();
+    } catch (err) {
+      setPayError(typeof err === "string" ? err : "Gagal memproses pembayaran");
+    } finally {
+      setIsPaying(false);
+    }
+  };
 
   return (
     <div className="w-full flex flex-col gap-4 rounded-2xl border border-border bg-white p-5">
@@ -80,6 +98,16 @@ export default function OrderCard({ order }) {
           <span className="text-sm text-primary">{formatRp(order.total)}</span>
         </div>
         <div className="flex items-center gap-3">
+          {order.status === "PENDING" && (
+            <button
+              type="button"
+              onClick={handlePayNow}
+              disabled={isPaying}
+              className="flex items-center gap-2 btn-accent text-white text-sm font-medium rounded-lg px-3 py-1.5 transition-colors disabled:opacity-60"
+            >
+              {isPaying ? "Memproses..." : "Bayar Sekarang"}
+            </button>
+          )}
           <button
             onClick={() => navigate(`#`)}
             className="text-sm text-primary border border-primary rounded-lg px-3 py-1.5 hover:bg-primary-light transition-colors"
@@ -93,6 +121,9 @@ export default function OrderCard({ order }) {
           )}
         </div>
       </div>
+      {payError && (
+        <p className="text-xs text-red-500 text-right">{payError}</p>
+      )}
     </div>
   );
 }
