@@ -84,13 +84,13 @@ export default function ProductCard({ product }) {
             ({product.review})
           </span>
         </div>
-        {product.discountPrice != 0 ? (
+        {product.discountPrice ? (
           <div className="flex items-center gap-1.5 mt-auto">
-            <span className="text-base font-bold text-primary">
+            <span className="text-xs md:text-sm font-bold text-primary">
               {product.discountPriceFormatted}
             </span>
             {product.regularPrice && (
-              <span className="text-xs text-text-secondary line-through">
+              <span className="text-xs md:text-sm text-text-secondary line-through">
                 {product.regularPriceFormatted}
               </span>
             )}
@@ -98,7 +98,7 @@ export default function ProductCard({ product }) {
         ) : (
           <div className="flex items-center gap-1.5 mt-auto">
             <span className="text-base font-bold text-primary">
-              {product.regularPrice}
+              {product.regularPriceFormatted}
             </span>
           </div>
         )}

@@ -6,6 +6,7 @@ import {
   Truck,
   Shield,
   RefreshCw,
+  ImageIcon,
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 
@@ -164,11 +165,18 @@ export default function DetailPage() {
           <div className="w-full lg:w-xl shrink-0">
             {/* Main Image */}
             <div className="relative w-full aspect-square rounded-2xl overflow-hidden">
-              <img
-                src={displayedImg}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+              {displayedImg ? (
+                <img
+                  src={displayedImg}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                  <ImageIcon className="w-10 h-10 text-gray-400" />
+                </div>
+              )}
+
               {badge && (
                 <span className="absolute top-4 left-4 bg-accent text-white text-sm px-3 py-1 rounded-full">
                   {badge.label}
@@ -185,11 +193,17 @@ export default function DetailPage() {
                   onClick={() => setSelectedImg(img)}
                   className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors duration-300 ${displayedImg === img ? "border-primary" : "border-border"}`}
                 >
-                  <img
-                    src={img}
-                    alt={`Thumbnail ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
+                  {img ? (
+                    <img
+                      src={img}
+                      alt={`Thumbnail ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <ImageIcon className="w-10 h-10 text-gray-400" />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
