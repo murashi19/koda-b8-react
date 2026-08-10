@@ -7,6 +7,7 @@ import { navItems } from "@/components/layout/data/navItem";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/features/auth/authSlice";
 import { clearWishlistState } from "@/features/wishlist/wishlistSlice";
+import { getFullImageUrl } from "@/lib/imageUrl";
 
 function useProfileStats() {
   const orders = useSelector((state) => state.orders.orders);
@@ -26,6 +27,7 @@ export default function ProfileSidebar({ activeNav }) {
 
   const character = auth?.full_name?.charAt(0).toUpperCase();
   const isAdmin = auth?.role === "ADMIN";
+  const avatarUrl = getFullImageUrl(auth?.avatar);
 
   // Item dengan adminOnly: true cuma ditampilkan kalau user-nya admin
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
@@ -45,10 +47,10 @@ export default function ProfileSidebar({ activeNav }) {
       {/* Avatar card */}
       <div className="flex flex-col items-center gap-3 card-base p-5 shadow-sm">
         <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-          {auth?.avatar ? (
+          {avatarUrl ? (
             <img
-              src={auth.avatar}
-              alt={auth.name}
+              src={avatarUrl}
+              alt={auth?.full_name}
               className="w-full h-full object-cover"
             />
           ) : (

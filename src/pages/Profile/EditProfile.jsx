@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { useForm } from "react-hook-form";
@@ -15,6 +15,7 @@ import ButtonMessage from "@/components/common/ButtonMessage";
 import Footer from "@/components/layout/Footer";
 import ProfileSidebar from "@/features/profile/components/ProfileSidebar";
 import api from "@/lib/axios";
+import { getFullImageUrl } from "@/lib/imageUrl";
 
 const inputClass =
   "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-normal text-text-primary outline-none focus:border-primary transition-colors";
@@ -50,7 +51,6 @@ export default function EditProfile() {
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth.user);
   const [isEditing, setIsEditing] = useState(false); // <-- toggle view/edit
-  const [selectedImage, setSelectedImage] = useState(auth?.avatar || "");
   const [avatarFile, setAvatarFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -67,6 +67,20 @@ export default function EditProfile() {
   } = useForm({
     resolver: yupResolver(editProfileSchema),
   });
+
+  const previewUrl = useMemo(() => {
+    if (avatarFile) return URL.createObjectURL(avatarFile);
+    return null;
+  }, [avatarFile]);
+
+  useEffect(() => {
+    // Bersihin blob URL lama biar gak leak memory tiap kali ganti/lepas foto
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const displayAvatar = previewUrl ?? getFullImageUrl(auth?.avatar);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -151,7 +165,6 @@ export default function EditProfile() {
       birth_date: formatDate(auth.birth_date) || "",
       gender: auth.gender || "",
     });
-    setSelectedImage(auth.avatar || "");
     setAvatarFile(null);
     setIsEditing(false);
   };
@@ -174,9 +187,7 @@ export default function EditProfile() {
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setAvatarFile(file);
-    setSelectedImage(URL.createObjectURL(file));
   };
 
   const genderLabel = (value) => {
@@ -248,9 +259,9 @@ export default function EditProfile() {
                 {/* Avatar */}
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 rounded-full overflow-hidden bg-primary-light">
-                    {selectedImage ? (
+                    {displayAvatar ? (
                       <img
-                        src={selectedImage}
+                        src={displayAvatar}
                         alt="Profile"
                         className="w-full h-full object-cover"
                       />
@@ -273,7 +284,6 @@ export default function EditProfile() {
                     accept="image/*"
                     className="hidden"
                     onChange={handleImageChange}
-                    {...register("image")}
                   />
                 </div>
 
@@ -355,9 +365,9 @@ export default function EditProfile() {
               <div className="w-full flex flex-col gap-4 bg-white border border-border rounded-2xl p-6">
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 rounded-full overflow-hidden bg-primary-light">
-                    {selectedImage ? (
+                    {displayAvatar ? (
                       <img
-                        src={selectedImage}
+                        src={displayAvatar}
                         alt="Profile"
                         className="w-full h-full object-cover"
                       />
