@@ -10,6 +10,8 @@ import dashboard from "@/features/admin/dashboardSlice";
 import addresses from "@/features/address/addressSlice";
 import wishlist from "@/features/wishlist/wishlistSlice";
 import cart from "@/features/cart/cartSlice";
+import categories from "@/features/categories/categoriesSlice";
+import tags from "@/features/tags/tagsSlice";
 
 const rootReducer = combineReducers({
   auth,
@@ -20,6 +22,8 @@ const rootReducer = combineReducers({
   addresses,
   wishlist,
   cart,
+  categories,
+  tags,
 });
 
 const persistConfig = {

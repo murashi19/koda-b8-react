@@ -1,13 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // react-icons
-
 import { BsStarFill } from "react-icons/bs";
-import { FiEye, FiEdit2, FiTrash2, FiSearch } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiSearch } from "react-icons/fi";
 import { RiFilter3Line } from "react-icons/ri";
 
 // Components
@@ -15,10 +13,17 @@ import Header from "@/features/admin/components/AdminHeader";
 import Sidebar from "@/features/admin/components/AdminSidebar";
 import AddProductModal from "@/features/admin/components/AddProduct";
 
-// Product Data
-import { summaryCards } from "@/features/products/data/products";
 import { useDispatch, useSelector } from "react-redux";
-import { addProduct, deleteProduct } from "@/features/products/productsSlice";
+import {
+  fetchProducts,
+  createProduct,
+  editProduct,
+  removeProduct,
+} from "@/features/products/productsSlice";
+import { fetchCategories } from "@/features/categories/categoriesSlice";
+import { fetchTags } from "@/features/tags/tagsSlice";
+import { getFullImageUrl } from "@/lib/imageUrl";
+import { TAG_CONFIG } from "@/features/products/data/tagConfig";
 
 import { toggleSidebar } from "@/features/admin/dashboardSlice";
 
@@ -31,22 +36,11 @@ const searchSchema = yup.object({
     .matches(/^[a-zA-Z0-9\s\-_.#]*$/, "Karakter tidak valid"),
 });
 
-const categories = [
-  "Semua Kategori",
-  "Elektronik",
-  "Fashion",
-  "Rumah & Dapur",
-  "Kecantikan",
-];
-
-const badgeConfig = {
-  new: { label: "Baru", bg: "bg-primary-light", text: "text-primary" },
-  featured: { label: "Unggulan", bg: "bg-amber-100", text: "text-amber-600" },
-  promo: { label: "Promo", bg: "bg-red-100", text: "text-red-600" },
-};
+// Tag produk beneran dari backend (product_tags): new, flash, best, star-seller, free-shipping
+// (config lengkapnya di features/products/data/tagConfig.js — dipakai bareng sama form AddProduct)
 
 // Delete Confirm Modal
-function DeleteModal({ product, onConfirm, onCancel }) {
+function DeleteModal({ product, onConfirm, onCancel, isDeleting }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-100 flex flex-col gap-4 shadow-xl">
@@ -60,15 +54,17 @@ function DeleteModal({ product, onConfirm, onCancel }) {
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm border border-border rounded-xl text-text-secondary hover:bg-surface transition-colors"
+            disabled={isDeleting}
+            className="px-4 py-2 text-sm border border-border rounded-xl text-text-secondary hover:bg-surface transition-colors disabled:opacity-60"
           >
             Batal
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors"
+            disabled={isDeleting}
+            className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-60"
           >
-            Hapus
+            {isDeleting ? "Menghapus..." : "Hapus"}
           </button>
         </div>
       </div>
@@ -78,39 +74,48 @@ function DeleteModal({ product, onConfirm, onCancel }) {
 
 // Main Page
 export default function ProductList() {
-  const navigate = useNavigate();
-  // const [activeNav, setActiveNav] = useState("products");
   const { sidebarOpen } = useSelector((state) => state.dashboard);
-  const products = useSelector((state) => state.products.items);
+  const {
+    items: products,
+    status: productsStatus,
+    mutationStatus,
+    mutationError,
+  } = useSelector((state) => state.products);
+  const { items: categories, status: categoriesStatus } = useSelector(
+    (state) => state.categories,
+  );
+  const { items: tags, status: tagsStatus } = useSelector(
+    (state) => state.tags,
+  );
   const dispatch = useDispatch();
+
   const [categoryFilter, setCategoryFilter] = useState("Semua Kategori");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [modalMode, setModalMode] = useState(null); // null | "add" | { mode: "edit", data }
 
-  const [showModal, setShowModal] = useState(false);
-  const handleAddProduct = (data) => {
-    dispatch(
-      addProduct({
-        id: products.length + 1,
-        name: data.nama,
-        brand: data.merek,
-        category: data.kategori,
-        image: URL.createObjectURL(data.gambar[0]),
-        description: data.deskripsi,
-        discountPrice: Number(data.harga),
-        regularPrice: data.hargaAsli ? Number(data.hargaAsli) : null,
-        stock: Number(data.stok),
-        rating: 0,
-        review: 0,
-        badges: [
-          ...(data.baru ? ["new"] : []),
-          ...(data.unggulan ? ["featured"] : []),
-        ],
-        wishlist: false,
-        createdAt: Date.now(),
-      }),
-    );
+  useEffect(() => {
+    if (productsStatus === "idle") dispatch(fetchProducts());
+  }, [productsStatus, dispatch]);
 
-    setShowModal(false);
+  useEffect(() => {
+    if (categoriesStatus === "idle") dispatch(fetchCategories());
+  }, [categoriesStatus, dispatch]);
+
+  useEffect(() => {
+    if (tagsStatus === "idle") dispatch(fetchTags());
+  }, [tagsStatus, dispatch]);
+
+  const submitProduct = async (formData) => {
+    if (modalMode === "add") {
+      const result = await dispatch(createProduct(formData));
+      if (createProduct.fulfilled.match(result)) setModalMode(null);
+    } else if (modalMode?.mode === "edit") {
+      const result = await dispatch(
+        editProduct({ id: modalMode.data.id, formData }),
+      );
+      if (editProduct.fulfilled.match(result)) setModalMode(null);
+    }
   };
 
   const {
@@ -135,9 +140,28 @@ export default function ProductList() {
     return matchSearch && matchCategory;
   });
 
-  const handleDelete = (id) => {
-    dispatch(deleteProduct(id));
-    setDeleteTarget(null);
+  // Summary cards dihitung dari data produk asli (bukan dummy data lagi)
+  const summaryCards = [
+    { value: products.length, label: "Total Produk" },
+    {
+      value: products.filter((p) => p.tags?.includes("new")).length,
+      label: "Produk Baru",
+    },
+    {
+      value: products.filter((p) => p.stock <= 5).length,
+      label: "Stok Rendah",
+    },
+    {
+      value: products.filter((p) => p.discountPrice != null).length,
+      label: "Produk Promo",
+    },
+  ];
+
+  const handleDelete = async (id) => {
+    setIsDeleting(true);
+    const result = await dispatch(removeProduct(id));
+    setIsDeleting(false);
+    if (removeProduct.fulfilled.match(result)) setDeleteTarget(null);
   };
 
   return (
@@ -161,7 +185,7 @@ export default function ProductList() {
               Manajemen Produk
             </h1>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => setModalMode("add")}
               className="flex items-center gap-2 px-5 py-3 btn-accent text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
             >
               + Tambah Produk
@@ -193,8 +217,9 @@ export default function ProductList() {
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="h-12 px-4 border border-border rounded-xl bg-white text-sm text-text-primary outline-none focus:border-primary transition-colors cursor-pointer"
             >
+              <option>Semua Kategori</option>
               {categories.map((c) => (
-                <option key={c}>{c}</option>
+                <option key={c.id}>{c.name}</option>
               ))}
             </select>
 
@@ -236,7 +261,7 @@ export default function ProductList() {
                       "Harga",
                       "Stok",
                       "Rating",
-                      "Status",
+                      "Tag",
                       "Aksi",
                     ].map((h) => (
                       <th
@@ -249,7 +274,16 @@ export default function ProductList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {productsStatus === "loading" ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="py-12 text-center text-sm text-text-secondary"
+                      >
+                        Memuat produk...
+                      </td>
+                    </tr>
+                  ) : filtered.length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
@@ -268,7 +302,7 @@ export default function ProductList() {
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <img
-                              src={p.image}
+                              src={getFullImageUrl(p.image)}
                               alt={p.name}
                               className="w-12 h-12 object-cover rounded-xl border border-border"
                             />
@@ -293,17 +327,12 @@ export default function ProductList() {
                         {/* Price */}
                         <td className="px-4 py-4">
                           <span className="block font-semibold text-primary">
-                            {new Intl.NumberFormat("id-ID", {
-                              style: "currency",
-                              currency: "IDR",
-                            }).format(p.discountPrice)}
+                            {p.discountPriceFormatted ??
+                              p.regularPriceFormatted}
                           </span>
-                          {p.regularPrice && (
+                          {p.discountPriceFormatted && (
                             <span className="text-xs text-text-secondary line-through">
-                              {new Intl.NumberFormat("id-ID", {
-                                style: "currency",
-                                currency: "IDR",
-                              }).format(p.regularPrice)}
+                              {p.regularPriceFormatted}
                             </span>
                           )}
                         </td>
@@ -323,15 +352,15 @@ export default function ProductList() {
                           </div>
                         </td>
 
-                        {/* Badges */}
+                        {/* Tags */}
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-1">
-                            {p.badges?.map((b) => (
+                            {p.tags?.map((t) => (
                               <span
-                                key={b}
-                                className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${badgeConfig[b]?.bg} ${badgeConfig[b]?.text}`}
+                                key={t}
+                                className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${TAG_CONFIG[t]?.bg ?? "bg-border"} ${TAG_CONFIG[t]?.text ?? "text-text-secondary"}`}
                               >
-                                {badgeConfig[b]?.label}
+                                {TAG_CONFIG[t]?.label ?? t}
                               </span>
                             ))}
                           </div>
@@ -342,16 +371,7 @@ export default function ProductList() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() =>
-                                navigate(`/admin/products/${p.id}`)
-                              }
-                              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface transition-colors cursor-pointer"
-                              title="Lihat"
-                            >
-                              <FiEye className="text-[15px] text-text-secondary" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                navigate(`/admin/products/${p.id}/edit`)
+                                setModalMode({ mode: "edit", data: p })
                               }
                               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-light transition-colors cursor-pointer"
                               title="Edit"
@@ -377,10 +397,15 @@ export default function ProductList() {
         </main>
       </div>
 
-      {showModal && (
+      {(modalMode === "add" || modalMode?.mode === "edit") && (
         <AddProductModal
-          onClose={() => setShowModal(false)}
-          onSubmit={handleAddProduct}
+          initialData={modalMode?.mode === "edit" ? modalMode.data : undefined}
+          categories={categories}
+          tags={tags}
+          onClose={() => setModalMode(null)}
+          onSubmit={submitProduct}
+          isSaving={mutationStatus === "loading"}
+          serverError={mutationStatus === "failed" ? mutationError : ""}
         />
       )}
 
@@ -390,6 +415,7 @@ export default function ProductList() {
           product={deleteTarget}
           onConfirm={() => handleDelete(deleteTarget.id)}
           onCancel={() => setDeleteTarget(null)}
+          isDeleting={isDeleting}
         />
       )}
     </div>

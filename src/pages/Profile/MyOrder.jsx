@@ -1,26 +1,43 @@
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 
+import { FaShoppingCart } from "react-icons/fa";
+
+// Components
 import Header from "@/components/layout/Header/index";
 import ButtonMessage from "@/components/common/ButtonMessage";
 import Footer from "@/components/layout/Footer";
 import OrderCard from "@/features/profile/components/OrderCard";
 import ProfileSidebar from "@/features/profile/components/ProfileSidebar";
-import { FaShoppingCart } from "react-icons/fa";
 
 import usePagination from "@/features/products/hooks/usePagination";
 import { fetchOrders } from "@/features/orders/ordersSlice";
 
 export default function MyOrder() {
   const dispatch = useDispatch();
-  const { orders, status } = useSelector((state) => state.orders);
+
+  // GET /orders sudah di-scope ke user yang login (lewat token), jadi gak perlu filter manual lagi
+  const userOrders = useSelector((state) => state.orders.orders);
+  const ordersStatus = useSelector((state) => state.orders.status);
 
   useEffect(() => {
-    dispatch(fetchOrders());
-  }, [dispatch]);
+    if (ordersStatus === "idle") {
+      dispatch(fetchOrders());
+    }
+  }, [ordersStatus]);
 
-  const { currentPage, setCurrentPage, totalPages, displayedData } =
-    usePagination(orders, 3);
+  // Pesanan terbaru ditampilkan paling atas (backend biasanya sudah urut, tapi jaga-jaga)
+  const sortedOrders = [...userOrders].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+  );
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const { displayedData, totalPages } = usePagination(
+    sortedOrders,
+    currentPage,
+    3,
+  );
 
   return (
     <>
@@ -36,24 +53,16 @@ export default function MyOrder() {
                 Pesanan Saya
               </h2>
               <span className="text-sm text-text-secondary">
-                {orders.length} pesanan
+                {userOrders.length} pesanan
               </span>
             </div>
 
-            {status === "loading" && (
-              <p className="text-sm text-text-secondary py-8 text-center">
-                Memuat pesanan...
-              </p>
-            )}
-
-            {status === "succeeded" && orders.length === 0 && (
+            {userOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-text-secondary">
                 <FaShoppingCart className="w-12 h-12" />
                 <p className="text-sm">Belum ada pesanan.</p>
               </div>
-            )}
-
-            {orders.length > 0 && (
+            ) : (
               <>
                 {displayedData.map((order) => (
                   <OrderCard key={order.id} order={order} />

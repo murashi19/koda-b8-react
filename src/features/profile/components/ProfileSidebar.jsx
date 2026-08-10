@@ -25,6 +25,10 @@ export default function ProfileSidebar({ activeNav }) {
   const dispatch = useDispatch();
 
   const character = auth?.full_name?.charAt(0).toUpperCase();
+  const isAdmin = auth?.role === "ADMIN";
+
+  // Item dengan adminOnly: true cuma ditampilkan kalau user-nya admin
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   const handleNav = (item) => {
     navigate(item.route);
@@ -75,7 +79,7 @@ export default function ProfileSidebar({ activeNav }) {
 
       {/* Nav card */}
       <div className="flex flex-col card-base overflow-hidden shadow-sm">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeNav === item.id;
           return (
