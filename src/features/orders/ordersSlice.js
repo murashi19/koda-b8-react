@@ -4,14 +4,13 @@ import { logout } from "@/features/auth/authSlice";
 import api from "@/lib/axios";
 
 // ---- Label status buat ditampilin ke user (fallback ke raw value kalau belum kemapping) ----
+// Match persis sama enum order_status di DB: PENDING, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED
 export const ORDER_STATUS_LABELS = {
   PENDING: "Menunggu Pembayaran",
   PAID: "Dibayar",
-  PROCESSED: "Diproses",
-  PACKED: "Dikemas",
+  PROCESSING: "Diproses",
   SHIPPED: "Dikirim",
   DELIVERED: "Terkirim",
-  COMPLETED: "Selesai",
   CANCELLED: "Dibatalkan",
 };
 
@@ -37,6 +36,22 @@ function normalizeOrderDetail(rows) {
   const first = rows[0];
   return {
     ...normalizeOrderSummary(first),
+    customerName: first.full_name,
+    customerEmail: first.email,
+    // Cuma keisi kalau row-nya dari GetOrderDetailAdmin (admin panel); dari
+    // GetOrderDetail biasa (customer) field-field ini undefined dan address jadi null.
+    address: first.address_detail
+      ? {
+          label: first.address_label,
+          province: first.address_province,
+          city: first.address_city,
+          district: first.address_district,
+          subdistrict: first.address_subdistrict,
+          postalCode: first.address_postal_code,
+          detail: first.address_detail,
+          note: first.address_note,
+        }
+      : null,
     items: rows.map((r) => ({
       productId: r.product_id,
       name: r.name,
@@ -48,7 +63,15 @@ function normalizeOrderDetail(rows) {
   };
 }
 
-// ---- Mapper: response order dari POST /orders (checkout) -> shape frontend ----
+// ---- Mapper: baris admin (GET /admin/orders) -> shape frontend, termasuk data pelanggan ----
+function normalizeAdminOrderSummary(o) {
+  return {
+    ...normalizeOrderSummary(o),
+    customerName: o.full_name,
+    customerEmail: o.email,
+    itemCount: Number(o.item_count ?? 0),
+  };
+}
 // Beda dari GetOrderDetail: items di sini udah di-nest sama backend, gak perlu digroup manual.
 function normalizeCheckoutOrder(o) {
   return {
@@ -65,13 +88,16 @@ function normalizeCheckoutOrder(o) {
 }
 
 const initialState = {
-  orders: [], // ringkasan order (dari GET /orders)
+  orders: [], // ringkasan order (dari GET /orders) — punya customer yang lagi login
   status: "idle",
   error: null,
-  detailsById: {}, // orderId -> { ...order, items: [...] }
-  detailStatusById: {}, // orderId -> idle | loading | succeeded | failed
-  placeOrderStatus: "idle", // idle | loading | succeeded | failed
+  detailsById: {},
+  detailStatusById: {},
+  placeOrderStatus: "idle",
   placeOrderError: null,
+  adminOrders: [], // semua order semua customer (dari GET /admin/orders) — dipakai admin panel
+  adminOrdersStatus: "idle",
+  adminOrdersError: null,
 };
 
 export const fetchOrders = createAsyncThunk(
@@ -98,7 +124,7 @@ export const fetchOrderDetail = createAsyncThunk(
   },
 );
 
-// Checkout beneran: POST /orders. Backend yang narik item dari cart user,
+// Checkout: POST /orders. Backend yang narik item dari cart user,
 // validasi stok, insert order + order_items, kurangin stok, dan kosongin cart_items.
 export const placeOrder = createAsyncThunk(
   "orders/placeOrder",
@@ -113,7 +139,7 @@ export const placeOrder = createAsyncThunk(
         paymentMethod,
       });
       const order = normalizeCheckoutOrder(res.data.data);
-      // Backend udah ngosongin cart_items di DB, sinkronin state lokal juga
+      // Kosongkan Cart
       dispatch(clearCartLocal());
       return order;
     } catch (err) {
@@ -142,19 +168,50 @@ export const payOrder = createAsyncThunk(
   },
 );
 
+// ---- Admin: semua order semua customer ----
+export const fetchAllOrdersAdmin = createAsyncThunk(
+  "orders/fetchAllOrdersAdmin",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/admin/orders");
+      return res.data.data.map(normalizeAdminOrderSummary);
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  },
+);
+
+export const fetchOrderDetailAdmin = createAsyncThunk(
+  "orders/fetchOrderDetailAdmin",
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/admin/orders/${orderId}`);
+      return normalizeOrderDetail(res.data.data);
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  },
+);
+
+// Admin ubah status order ke status apapun (PROCESSING, SHIPPED, DELIVERED, CANCELLED, dst),
+export const adminUpdateOrderStatus = createAsyncThunk(
+  "orders/adminUpdateOrderStatus",
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(`/orders/${id}/status`, { status });
+      return normalizeOrderSummary(res.data.data);
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message ?? "Gagal mengubah status pesanan",
+      );
+    }
+  },
+);
+
 const ordersSlice = createSlice({
   name: "orders",
   initialState,
-  reducers: {
-    addOrder(state, action) {
-      state.orders.unshift(action.payload);
-    },
-    updateOrderStatus(state, action) {
-      const { id, status } = action.payload;
-      const order = state.orders.find((o) => o.id === id || o.orderId === id);
-      if (order) order.status = status;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchOrders.pending, (state) => {
@@ -203,14 +260,46 @@ const ordersSlice = createSlice({
           state.detailsById[updated.id].status = updated.status;
         }
       })
+      .addCase(fetchAllOrdersAdmin.pending, (state) => {
+        state.adminOrdersStatus = "loading";
+      })
+      .addCase(fetchAllOrdersAdmin.fulfilled, (state, action) => {
+        state.adminOrdersStatus = "succeeded";
+        state.adminOrders = action.payload;
+      })
+      .addCase(fetchAllOrdersAdmin.rejected, (state, action) => {
+        state.adminOrdersStatus = "failed";
+        state.adminOrdersError = action.payload;
+      })
+      .addCase(fetchOrderDetailAdmin.pending, (state, action) => {
+        state.detailStatusById[action.meta.arg] = "loading";
+      })
+      .addCase(fetchOrderDetailAdmin.fulfilled, (state, action) => {
+        const detail = action.payload;
+        if (!detail) return;
+        state.detailsById[detail.id] = detail;
+        state.detailStatusById[detail.id] = "succeeded";
+      })
+      .addCase(fetchOrderDetailAdmin.rejected, (state, action) => {
+        state.detailStatusById[action.meta.arg] = "failed";
+      })
+      .addCase(adminUpdateOrderStatus.fulfilled, (state, action) => {
+        const updated = action.payload;
+        const order = state.adminOrders.find((o) => o.id === updated.id);
+        if (order) order.status = updated.status;
+        if (state.detailsById[updated.id]) {
+          state.detailsById[updated.id].status = updated.status;
+        }
+      })
       .addCase(logout, (state) => {
         state.orders = [];
         state.status = "idle";
         state.checkoutStatus = "idle";
         state.error = null;
+        state.adminOrders = [];
+        state.adminOrdersStatus = "idle";
       });
   },
 });
 
-export const { addOrder, updateOrderStatus } = ordersSlice.actions;
 export default ordersSlice.reducer;
