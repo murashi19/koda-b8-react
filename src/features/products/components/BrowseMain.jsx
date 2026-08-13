@@ -19,12 +19,14 @@ export default function BrowseMain() {
   const products = useSelector((state) => state.products.items);
   const status = useSelector((state) => state.products.status);
 
+  // FETCH PRODUCTS
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchProducts());
     }
   }, [status, dispatch]);
-  // URL State
+
+  // URL STATE
   const searchQuery = searchParams.get("q") ?? "";
   const selectedBrands = searchParams.getAll("brand");
   const selectedRating = Number(searchParams.get("rating")) || null;
@@ -32,7 +34,7 @@ export default function BrowseMain() {
   const priceMax = Number(searchParams.get("priceMax")) || 20000000;
   const page = Number(searchParams.get("page")) || 1;
 
-  // Helper
+  // URL PARAM HELPER
   const setParam = useCallback(
     (updates) => {
       setSearchParams((prev) => {
@@ -42,56 +44,66 @@ export default function BrowseMain() {
           if (value === null || value === undefined || value === "") {
             next.delete(key);
           } else {
-            next.set(key, value);
+            next.set(key, String(value));
           }
         });
-
         return next;
       });
     },
     [setSearchParams],
   );
 
-  // Event Handler
-  const changePage = (page) => {
+  // PAGINATION
+  const changePage = (newPage) => {
     animateScroll.scrollToTop({
       duration: 700,
       smooth: "easeInOutQuart",
     });
-    setParam({ page });
+    setParam({
+      page: newPage,
+    });
   };
+
+  // BRAND FILTER
   const toggleBrand = (brand) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       const current = next.getAll("brand");
       next.delete("brand");
       const updated = current.includes(brand)
-        ? current.filter((b) => b !== brand)
+        ? current.filter((item) => item !== brand)
         : [...current, brand];
-      updated.forEach((b) => next.append("brand", b));
+      updated.forEach((item) => {
+        next.append("brand", item);
+      });
+
+      // Reset pagination
       next.set("page", "1");
       return next;
     });
   };
 
-  // Derived Data
-  const brands = useMemo(
-    () => [...new Set(products.map((product) => product.brand))],
-    [],
-  );
-  const categoriesWithCount = useMemo(
-    () =>
-      category.map((cat) => ({
-        ...cat,
-        totalProduct: products.filter(
-          (product) => product.category === cat.name,
-        ).length,
-      })),
-    [],
-  );
-  const selectedCategory = categoriesWithCount.find((cat) => cat.slug === slug);
+  // BRANDS
+  const brands = useMemo(() => {
+    return [
+      ...new Set(products.map((product) => product.brand).filter(Boolean)),
+    ].sort();
+  }, [products]);
 
-  // Custom Hooks
+  // CATEGORIES
+  const categoriesWithCount = useMemo(() => {
+    return category.map((cat) => ({
+      ...cat,
+      totalProduct: products.filter((product) => product.category === cat.name)
+        .length,
+    }));
+  }, [products]);
+
+  const selectedCategory = useMemo(() => {
+    return categoriesWithCount.find((cat) => cat.slug === slug);
+  }, [categoriesWithCount, slug]);
+
+  // FILTER PRODUCTS
   const { filteredProducts } = useProductFilter(
     products,
     selectedCategory?.name,
@@ -101,9 +113,12 @@ export default function BrowseMain() {
     inStock,
     priceMax,
   );
+
+  // PAGINATION DATA
   const { displayedData, currentPage, totalPages, hasNextPage, hasPrevPage } =
     usePagination(filteredProducts, page, 16);
 
+  // LOADING
   if (status === "loading" || status === "idle") {
     return (
       <div className="container-page py-20 text-center text-text-secondary">
@@ -112,6 +127,7 @@ export default function BrowseMain() {
     );
   }
 
+  // ERROR
   if (status === "failed") {
     return (
       <div className="container-page py-20 text-center text-red-500">
@@ -119,7 +135,8 @@ export default function BrowseMain() {
       </div>
     );
   }
-  // Early Return
+
+  // INVALID CATEGORY
   if (slug && !selectedCategory) {
     return (
       <div className="container-page py-20 text-center">
@@ -127,16 +144,17 @@ export default function BrowseMain() {
       </div>
     );
   }
-
-  // Derived Value
+  // PAGE TITLE
   const pageTitle = searchQuery
     ? `Hasil pencarian untuk "${searchQuery}"`
     : slug
       ? selectedCategory.name
       : "Semua Produk";
 
+  // RENDER
   return (
     <main className="container-page px-4 mb-12">
+      {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-text-secondary mt-6 mb-6">
         <Link to="/" className="text-text-secondary hover:text-text-primary">
           Beranda
@@ -151,28 +169,42 @@ export default function BrowseMain() {
         </span>
       </nav>
 
+      {/* Title */}
       <h1 className="font-display text-2xl md:text-3xl font-bold text-text-primary mb-6">
         {pageTitle}
       </h1>
 
       <div className="flex flex-col lg:flex-row gap-6">
+        {/* FILTER*/}
+
         <BrowseFilter
           brands={brands}
           selectedBrands={selectedBrands}
           onBrandChange={toggleBrand}
           selectedRating={selectedRating}
-          onRatingChange={(val) =>
-            setParam({ rating: val === selectedRating ? null : val, page: "1" })
+          onRatingChange={(value) =>
+            setParam({
+              rating: value === selectedRating ? null : value,
+              page: "1",
+            })
           }
           inStock={inStock}
           onStockChange={() =>
-            setParam({ stock: inStock ? null : "1", page: "1" })
+            setParam({
+              stock: inStock ? null : "1",
+              page: "1",
+            })
           }
           priceMax={priceMax}
-          onPriceChange={(val) =>
-            setParam({ priceMax: val === 20000000 ? null : val, page: "1" })
+          onPriceChange={(value) =>
+            setParam({
+              priceMax: value === 20000000 ? null : value,
+              page: "1",
+            })
           }
         />
+
+        {/* PRODUCTS*/}
 
         <div className="flex-1">
           <p className="text-sm text-text-secondary mb-4">
@@ -195,25 +227,42 @@ export default function BrowseMain() {
             </div>
           )}
 
+          {/* PAGINATION*/}
+
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
+              {/* Previous */}
               <button
+                type="button"
                 onClick={() => changePage(currentPage - 1)}
                 disabled={!hasPrevPage}
                 className="px-4 py-2 border border-border rounded-lg text-sm text-text-secondary hover:border-primary/40 disabled:opacity-50 disabled:hover:border-border transition-colors duration-300 cursor-pointer"
               >
                 Prev
               </button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => changePage(i + 1)}
-                  className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors duration-300 cursor-pointer ${currentPage === i + 1 ? "bg-primary text-white border-primary" : "bg-white border-border text-text-secondary hover:border-primary/40"}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+
+              {/* Page Numbers */}
+              {Array.from({ length: totalPages }, (_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button
+                    type="button"
+                    key={pageNumber}
+                    onClick={() => changePage(pageNumber)}
+                    className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors duration-300 cursor-pointer ${
+                      currentPage === pageNumber
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white border-border text-text-secondary hover:border-primary/40"
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+
+              {/* Next */}
               <button
+                type="button"
                 onClick={() => changePage(currentPage + 1)}
                 disabled={!hasNextPage}
                 className="px-4 py-2 border border-border rounded-lg text-sm text-text-secondary hover:border-primary/40 disabled:opacity-50 disabled:hover:border-border transition-colors duration-300 cursor-pointer"

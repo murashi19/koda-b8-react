@@ -2,56 +2,87 @@ import api from "@/lib/axios";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 function formatRupiah(value) {
-  const number = Math.round(Number(value));
+  const number = Math.round(Number(value) || 0);
   return `Rp ${number.toLocaleString("id-ID")}`;
 }
 
+function mapTags(tags) {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  return tags
+    .map((tag) => {
+      if (typeof tag === "string") {
+        return tag;
+      }
+      return tag?.name;
+    })
+    .filter(Boolean);
+}
+
 export function mapProduct(p) {
-  const regularPrice = Number(p.regular_price);
+  const regularPrice = Number(p.regular_price) || 0;
   const discountPrice =
-    p.discount_price != null ? Number(p.discount_price) : null;
+    p.discount_price !== null &&
+    p.discount_price !== undefined &&
+    p.discount_price !== ""
+      ? Number(p.discount_price)
+      : null;
 
   return {
     id: p.id,
     brand: p.brand,
     name: p.name,
-    image: p.image,
-    category: p.category_name,
+    image: p.image || null,
+    category: p.category_name || p.category?.name || "",
     categoryId: p.category_id ?? null,
-    regularPrice, // number, dipakai untuk kalkulasi & badge
-    discountPrice, // number | null
+    regularPrice,
+    discountPrice,
     regularPriceFormatted: formatRupiah(regularPrice),
     discountPriceFormatted:
-      discountPrice != null ? formatRupiah(discountPrice) : null,
-    rating: Number(p.rating),
+      discountPrice !== null ? formatRupiah(discountPrice) : null,
+    rating: Number(p.rating) || 0,
     review: p.review_count ?? p.review ?? 0,
-    tags: p.tags ?? [],
-    stock: p.stock,
+    tags: mapTags(p.tags),
+    stock: Number(p.stock) || 0,
     description: p.description ?? "",
+    gallery: Array.isArray(p.gallery) ? p.gallery : [],
   };
 }
 
 function mapProductDetail(p) {
+  const product = mapProduct(p);
   return {
-    ...mapProduct(p),
-    description: p.description ?? "",
-    specifications: p.specifications ?? "",
-    images: p.images?.length ? p.images : [p.image],
+    ...product,
+    description: p.detail?.description ?? "",
+    specifications: p.detail?.specifications ?? "",
+    images:
+      Array.isArray(p.gallery) && p.gallery.length > 0
+        ? p.gallery.map((image) => image.image_url || image)
+        : p.images?.length
+          ? p.images
+          : p.image
+            ? [p.image]
+            : [],
   };
 }
 
+// GET ALL PRODUCTS
 export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get("/products");
-      return res.data.data.map(mapProduct);
+      return (res.data.data || []).map(mapProduct);
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(
+        err.response?.data?.message || err.message || "Gagal mengambil produk",
+      );
     }
   },
 );
 
+// GET PRODUCT DETAIL
 export const fetchProductById = createAsyncThunk(
   "products/fetchProductById",
   async (id, { rejectWithValue }) => {
@@ -59,23 +90,25 @@ export const fetchProductById = createAsyncThunk(
       const res = await api.get(`/products/${id}`);
       return mapProductDetail(res.data.data);
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Gagal mengambil detail produk",
+      );
     }
   },
 );
 
-// ---- Admin CRUD: semuanya beneran hit backend (bukan lokal doang) ----
-
-// formData: FormData berisi brand, name, category_id, regular_price,
-// discount_price, stock, description, dan file "image" (opsional kalau pakai URL).
+// CREATE PRODUCT
 export const createProduct = createAsyncThunk(
   "products/createProduct",
   async (formData, { dispatch, rejectWithValue }) => {
     try {
       await api.post("/products", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
-      // Refetch biar dapet data lengkap (category_name, tags, dll) hasil JOIN dari backend
       await dispatch(fetchProducts());
     } catch (err) {
       return rejectWithValue(
@@ -85,12 +118,15 @@ export const createProduct = createAsyncThunk(
   },
 );
 
+// UPDATE PRODUCT
 export const editProduct = createAsyncThunk(
   "products/editProduct",
   async ({ id, formData }, { dispatch, rejectWithValue }) => {
     try {
       await api.patch(`/products/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
       await dispatch(fetchProducts());
     } catch (err) {
@@ -101,6 +137,7 @@ export const editProduct = createAsyncThunk(
   },
 );
 
+// DELETE PRODUCT
 export const removeProduct = createAsyncThunk(
   "products/removeProduct",
   async (id, { rejectWithValue }) => {
@@ -124,9 +161,15 @@ const initialState = {
     status: "idle",
     error: null,
   },
-  filters: { search: "", category: "Semua Kategori" },
-  pagination: { currentPage: 1, itemsPerPage: 10 },
-  mutationStatus: "idle", // idle | loading | succeeded | failed — dipakai bareng buat create/edit/delete
+  filters: {
+    search: "",
+    category: "Semua Kategori",
+  },
+  pagination: {
+    currentPage: 1,
+    itemsPerPage: 10,
+  },
+  mutationStatus: "idle",
   mutationError: null,
 };
 
@@ -140,29 +183,30 @@ const productSlice = createSlice({
         ...action.payload,
       };
     },
-
     setPage: (state, action) => {
       state.pagination.currentPage = action.payload;
     },
-
     updateStock: (state, action) => {
       const { id, stock } = action.payload;
-
-      const product = state.items.find((p) => p.id === id);
-
+      const product = state.items.find((p) => String(p.id) === String(id));
       if (product) {
         product.stock = stock;
       }
     },
-
     clearProductDetail: (state) => {
-      state.detail = { data: null, status: "idle", error: null };
+      state.detail = {
+        data: null,
+        status: "idle",
+        error: null,
+      };
     },
   },
   extraReducers: (builder) => {
     builder
+      // FETCH PRODUCTS
       .addCase(fetchProducts.pending, (state) => {
         state.status = "loading";
+        state.error = null;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.status = "succeeded";
@@ -172,6 +216,7 @@ const productSlice = createSlice({
         state.status = "failed";
         state.error = action.payload;
       })
+      // FETCH PRODUCT DETAIL
       .addCase(fetchProductById.pending, (state) => {
         state.detail.status = "loading";
         state.detail.error = null;
@@ -184,6 +229,7 @@ const productSlice = createSlice({
         state.detail.status = "failed";
         state.detail.error = action.payload;
       })
+      // CREATE
       .addCase(createProduct.pending, (state) => {
         state.mutationStatus = "loading";
         state.mutationError = null;
@@ -195,6 +241,8 @@ const productSlice = createSlice({
         state.mutationStatus = "failed";
         state.mutationError = action.payload;
       })
+
+      // UPDATE
       .addCase(editProduct.pending, (state) => {
         state.mutationStatus = "loading";
         state.mutationError = null;
@@ -206,10 +254,20 @@ const productSlice = createSlice({
         state.mutationStatus = "failed";
         state.mutationError = action.payload;
       })
+
+      // DELETE
+      .addCase(removeProduct.pending, (state) => {
+        state.mutationStatus = "loading";
+        state.mutationError = null;
+      })
       .addCase(removeProduct.fulfilled, (state, action) => {
-        state.items = state.items.filter((p) => p.id !== action.payload);
+        state.mutationStatus = "succeeded";
+        state.items = state.items.filter(
+          (p) => String(p.id) !== String(action.payload),
+        );
       })
       .addCase(removeProduct.rejected, (state, action) => {
+        state.mutationStatus = "failed";
         state.mutationError = action.payload;
       });
   },

@@ -1,11 +1,12 @@
+import { useState } from "react";
 import StarRating from "@/components/common/StarsRate";
 import { SlidersHorizontal } from "lucide-react";
 
 const ratingOptions = [5, 4, 3];
-
+const INITIAL_BRAND_LIMIT = 10;
 export default function BrowseFilter({
-  brands,
-  selectedBrands,
+  brands = [],
+  selectedBrands = [],
   onBrandChange,
   selectedRating,
   onRatingChange,
@@ -14,18 +15,28 @@ export default function BrowseFilter({
   priceMax,
   onPriceChange,
 }) {
+  const [showAllBrands, setShowAllBrands] = useState(false);
+  const visibleBrands = showAllBrands
+    ? brands
+    : brands.slice(0, INITIAL_BRAND_LIMIT);
+
+  const hasMoreBrands = brands.length > INITIAL_BRAND_LIMIT;
   return (
     <aside className="flex w-full lg:w-64 shrink-0 flex-col gap-6 h-fit card-base p-5 shadow-sm lg:sticky lg:top-40">
+      {/* Header */}
       <div className="flex items-center gap-2 pb-3 border-b border-border">
         <SlidersHorizontal className="w-4 h-4 text-primary" />
+
         <h2 className="font-semibold text-text-primary text-sm">
           Filter Produk
         </h2>
       </div>
 
-      {/* Harga */}
+      {/* HARGA */}
       <div>
-        <h3 className="font-semibold text-sm text-text-primary mb-3">Harga</h3>
+        <h3 className="font-semibold text-sm text-text-primary mb-3">
+          Harga Maksimal
+        </h3>
         <input
           type="range"
           min="0"
@@ -35,17 +46,20 @@ export default function BrowseFilter({
           onChange={(e) => onPriceChange(Number(e.target.value))}
           className="w-full accent-primary"
         />
+
         <div className="flex justify-between text-xs text-text-secondary mt-1">
           <span>Rp 0</span>
-          <span>Rp {priceMax.toLocaleString("id-ID")}</span>
+
+          <span>Rp {Number(priceMax).toLocaleString("id-ID")}</span>
         </div>
       </div>
 
-      {/* Merek */}
+      {/* MEREK */}
       <div>
         <h3 className="font-semibold text-sm text-text-primary mb-3">Merek</h3>
+
         <div className="flex flex-col gap-2.5">
-          {brands.map((brand) => (
+          {visibleBrands.map((brand) => (
             <label
               key={brand}
               className="flex items-center gap-2 cursor-pointer text-sm text-text-secondary hover:text-text-primary transition-colors duration-300"
@@ -56,17 +70,32 @@ export default function BrowseFilter({
                 onChange={() => onBrandChange(brand)}
                 className="accent-primary w-4 h-4 rounded"
               />
-              <span>{brand}</span>
+
+              <span className="truncate">{brand}</span>
             </label>
           ))}
         </div>
+
+        {/* Tampilkan semua / lebih sedikit */}
+        {hasMoreBrands && (
+          <button
+            type="button"
+            onClick={() => setShowAllBrands((prev) => !prev)}
+            className="mt-3 text-sm font-medium text-primary hover:text-primary-dark hover:underline cursor-pointer"
+          >
+            {showAllBrands
+              ? "Tampilkan lebih sedikit"
+              : `Tampilkan semua brand (${brands.length})`}
+          </button>
+        )}
       </div>
 
-      {/* Rating */}
+      {/* RATING */}
       <div>
         <h3 className="font-semibold text-sm text-text-primary mb-3">
           Rating Minimum
         </h3>
+
         <div className="flex flex-col gap-2.5">
           {ratingOptions.map((rating) => (
             <label
@@ -81,17 +110,28 @@ export default function BrowseFilter({
                 onChange={() => onRatingChange(rating)}
               />
               <StarRating className="w-3.5 h-3.5" rating={rating} />
-              <span>Ke bawah</span>
+              <span>{rating}.0+</span>
             </label>
           ))}
         </div>
+
+        {selectedRating !== null && (
+          <button
+            type="button"
+            onClick={() => onRatingChange(null)}
+            className="mt-3 text-xs text-primary hover:underline cursor-pointer"
+          >
+            Hapus filter rating
+          </button>
+        )}
       </div>
 
-      {/* Stock */}
+      {/* STOCK */}
       <div>
         <h3 className="font-semibold text-sm text-text-primary mb-3">
           Ketersediaan
         </h3>
+
         <label className="flex items-center gap-2 cursor-pointer text-sm text-text-secondary hover:text-text-primary transition-colors duration-300">
           <input
             type="checkbox"
@@ -99,6 +139,7 @@ export default function BrowseFilter({
             onChange={onStockChange}
             className="accent-primary w-4 h-4 rounded"
           />
+
           <span>Stok tersedia</span>
         </label>
       </div>

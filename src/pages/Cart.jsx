@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trash2, Heart, Shield, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // Data
-import { products } from "@/features/products/data/products";
+import { fetchProducts } from "@/features/products/productsSlice";
 
 // Hooks (Redux)
 import useCart from "@/features/cart/useCart";
@@ -13,13 +13,16 @@ import Header from "@/components/layout/Header/index";
 import ButtonMessage from "@/components/common/ButtonMessage";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/features/products/components/ProductCard";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 // Main Page
 export default function Cart() {
   const navigate = useNavigate();
   const [voucher, setVoucher] = useState("");
   const auth = useSelector((state) => state.auth.user);
+  const products = useSelector((state) => state.products.items);
+  const dispatch = useDispatch();
+
   const { cart, updateCartQty, removeFromCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
@@ -28,6 +31,9 @@ export default function Cart() {
   const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
   const handleSaveToWishlist = (item) => {
     if (!auth) return;
     if (!isWishlisted(item.productId)) {

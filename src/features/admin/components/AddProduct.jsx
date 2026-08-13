@@ -159,8 +159,6 @@ export default function AddProductModal({
     if (hasImage) {
       formData.append("image", data.gambar[0]);
     }
-    // Marker eksplisit biar backend tau tag ini sengaja dikirim (walau kosong),
-    // bukan "gak diubah" — lihat parseTagIds di product.controller.js
     formData.append("has_tag_ids", "1");
     checkedTagIds.forEach((id) => formData.append("tag_ids", id));
 

@@ -19,7 +19,12 @@ export default function ProductCard({ product }) {
   const { toggleWishlist, isWishlisted } = useWishlist();
 
   const wishlisted = isWishlisted(product.id);
-  const badge = getProductBadge(product);
+  const normalizedProduct = {
+    ...product,
+    tags: product.tags?.map((tag) => tag.name) ?? [],
+  };
+
+  const badge = getProductBadge(normalizedProduct);
 
   const handleToggleWishlist = (e) => {
     e.preventDefault();
@@ -81,15 +86,16 @@ export default function ProductCard({ product }) {
             {product.rating}
           </span>
           <span className="text-xs text-text-secondary">
-            ({product.review})
+            ({product.review_count ?? 0})
           </span>
         </div>
-        {product.discountPrice ? (
+
+        {product.discount_price ? (
           <div className="flex items-center gap-1.5 mt-auto">
             <span className="text-xs md:text-sm font-bold text-primary">
               {product.discountPriceFormatted}
             </span>
-            {product.regularPrice && (
+            {product.regular_price && (
               <span className="text-xs md:text-sm text-text-secondary line-through">
                 {product.regularPriceFormatted}
               </span>
