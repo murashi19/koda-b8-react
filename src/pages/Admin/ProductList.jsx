@@ -26,6 +26,7 @@ import { getFullImageUrl } from "@/lib/imageUrl";
 import { TAG_CONFIG } from "@/features/products/data/tagConfig";
 
 import { toggleSidebar } from "@/features/admin/dashboardSlice";
+import { ImageIcon } from "lucide-react";
 
 // Yup Schema
 const searchSchema = yup.object({
@@ -301,11 +302,18 @@ export default function ProductList() {
                         {/* Product */}
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
-                            <img
-                              src={getFullImageUrl(p.image)}
-                              alt={p.name}
-                              className="w-12 h-12 object-cover rounded-xl border border-border"
-                            />
+                            {getFullImageUrl(p.image) ? (
+                              <img
+                                src={getFullImageUrl(p.image)}
+                                alt={p.name}
+                                className="w-12 h-12 object-cover rounded-xl border border-border"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-xl border border-border">
+                                <ImageIcon className="w-10 h-10 text-gray-400" />
+                              </div>
+                            )}
+
                             <div>
                               <p className="font-semibold text-text-primary">
                                 {p.name}
