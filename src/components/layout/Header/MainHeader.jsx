@@ -62,7 +62,7 @@ function MainHeader() {
     }
   };
 
-  const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const cartCount = cart.length;
   const wishlistCount = wishlist.length;
 
   return (
@@ -70,7 +70,7 @@ function MainHeader() {
       <div className="container-page flex items-center justify-between gap-6 py-4 px-4 xl:px-0">
         {/* LOGO */}
         <Link className="shrink-0 flex items-center cursor-pointer" to="/">
-          <img className="w-36 md:w-40" src={LogoHeader} alt="Logo BeliMudah" />
+          <img className="w-32 md:w-38" src={LogoHeader} alt="Logo BeliMudah" />
         </Link>
 
         {/* SEARCH */}
