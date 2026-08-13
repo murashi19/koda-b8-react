@@ -103,7 +103,7 @@ export default function EditProfile() {
         dispatch(
           updateUser({
             full_name: profile.full_name,
-            email: profile.email,
+            email: profile.User.email,
             phone_number: profile.phone_number,
             birth_date: profile.birth_date,
             gender: profile.gender,
