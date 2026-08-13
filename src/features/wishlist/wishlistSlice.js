@@ -8,7 +8,7 @@ export const fetchWishlist = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get("/wishlist");
-      return res.data.data.map(mapProduct); // reuse mapper dari productsSlice
+      return res.data.data.map((entry) => mapProduct(entry.product));
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
@@ -20,10 +20,12 @@ export const addToWishlist = createAsyncThunk(
   async (product, { dispatch, rejectWithValue }) => {
     try {
       await api.post("/wishlist", { product_id: product.id });
-      await dispatch(fetchWishlist());
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      if (err.response?.status !== 409) {
+        return rejectWithValue(err.response?.data?.message || err.message);
+      }
     }
+    await dispatch(fetchWishlist());
   },
 );
 
@@ -66,11 +68,6 @@ const wishlistSlice = createSlice({
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
-      })
-      .addCase(addToWishlist.fulfilled, (state, action) => {
-        if (!state.items.some((item) => item.id === action.payload.id)) {
-          state.items.push(action.payload);
-        }
       })
       .addCase(logout, (state) => {
         state.items = [];
