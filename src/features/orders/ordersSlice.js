@@ -27,6 +27,14 @@ function normalizeOrderSummary(o) {
     total: Number(o.total),
     status: o.status,
     createdAt: o.created_at,
+    items: (o.items ?? []).map((item) => ({
+      productId: item.product_id,
+      name: item.product_name,
+      image: item.product_image,
+      price: Number(item.price),
+      qty: item.qty,
+      subtotal: Number(item.subtotal),
+    })),
   };
 }
 

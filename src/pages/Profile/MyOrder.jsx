@@ -18,13 +18,11 @@ export default function MyOrder() {
 
   // GET /orders sudah di-scope ke user yang login (lewat token), jadi gak perlu filter manual lagi
   const userOrders = useSelector((state) => state.orders.orders);
-  const ordersStatus = useSelector((state) => state.orders.status);
+  // const ordersStatus = useSelector((state) => state.orders.status);
 
   useEffect(() => {
-    if (ordersStatus === "idle") {
-      dispatch(fetchOrders());
-    }
-  }, [ordersStatus]);
+    dispatch(fetchOrders());
+  }, [dispatch]);
 
   // Pesanan terbaru ditampilkan paling atas (backend biasanya sudah urut, tapi jaga-jaga)
   const sortedOrders = [...userOrders].sort(

@@ -229,8 +229,8 @@ export default function OrderList() {
   const [statusUpdating, setStatusUpdating] = useState(null); // id lagi diupdate
 
   useEffect(() => {
-    if (status === "idle") dispatch(fetchAllOrdersAdmin());
-  }, [status, dispatch]);
+    dispatch(fetchAllOrdersAdmin());
+  }, [dispatch]);
 
   const {
     register,
