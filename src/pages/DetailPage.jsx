@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   ChevronRight,
   ShoppingCart,
@@ -7,8 +8,11 @@ import {
   Shield,
   RefreshCw,
   ImageIcon,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { animateScroll } from "react-scroll";
 
 // Components
 import Header from "@/components/layout/Header/index";
@@ -17,69 +21,88 @@ import Footer from "@/components/layout/Footer";
 import StarRating from "@/components/common/StarsRate";
 import ProductCard from "@/features/products/components/ProductCard";
 
-// Hooks (Redux)
+// Hooks
 import useCart from "@/features/cart/useCart";
 import useWishlist from "@/features/wishlist/useWishlist";
 
-// Data
-import { useDispatch, useSelector } from "react-redux";
+// Redux
 import {
   fetchProducts,
   fetchProductById,
   clearProductDetail,
 } from "@/features/products/productsSlice";
+
+// Utils / Data
 import getProductBadge from "@/utils/getProductBadge";
 import category from "@/features/products/data/category";
-import { animateScroll } from "react-scroll";
+// DELIVERY INF
 
-// Data Delivery
 const deliveryInfo = [
-  { icon: Truck, label: "Gratis Ongkir", sub: "Min. Rp 100.000" },
-  { icon: Shield, label: "Pembayaran Aman", sub: "SSL Terenkripsi" },
-  { icon: RefreshCw, label: "Retur 30 Hari", sub: "Gratis retur" },
+  {
+    icon: Truck,
+    label: "Gratis Ongkir",
+    sub: "Min. Rp 100.000",
+  },
+  {
+    icon: Shield,
+    label: "Pembayaran Aman",
+    sub: "SSL Terenkripsi",
+  },
+  {
+    icon: RefreshCw,
+    label: "Retur 30 Hari",
+    sub: "Gratis retur",
+  },
 ];
+// TAB
 
-const colorOptions = ["Hitam", "Putih", "Biru"];
 const tabs = ["Deskripsi", "Spesifikasi", "Ulasan (2)"];
+// MAIN PAG
 
-// Main Page
 export default function DetailPage() {
   const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const { data: product, status } = useSelector(
     (state) => state.products.detail,
   );
+
   const { items } = useSelector((state) => state.products);
+
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
-  const [selectedColor, setSelectedColor] = useState("Hitam");
+
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("Deskripsi");
   const [selectedImg, setSelectedImg] = useState(null);
-  const [selectedImgId, setSelectedImgId] = useState(id);
+
+  // FETCH PRODUCT DETAIL
 
   useEffect(() => {
     dispatch(fetchProductById(id));
-    return () => dispatch(clearProductDetail());
+
+    return () => {
+      dispatch(clearProductDetail());
+    };
   }, [id, dispatch]);
 
+  // FETCH PRODUCTS FOR RELATED PRODUCTS
   useEffect(() => {
     if (items.length === 0) {
       dispatch(fetchProducts());
     }
   }, [items.length, dispatch]);
 
-  if (id !== selectedImgId) {
-    setSelectedImgId(id);
-    setSelectedImg(null);
-  }
-  const displayedImg = selectedImg ?? product?.image;
-
+  // SCROLL TO TOP
   useEffect(() => {
-    animateScroll.scrollToTop({ duration: 700, smooth: "easeInOutQuart" });
+    animateScroll.scrollToTop({
+      duration: 700,
+      smooth: "easeInOutQuart",
+    });
   }, [id]);
 
+  // LOADING
   if (status === "loading" || status === "idle") {
     return (
       <>
@@ -87,45 +110,94 @@ export default function DetailPage() {
         <main className="container-page px-4 py-20 text-center text-text-secondary">
           Memuat produk...
         </main>
+
         <Footer />
       </>
     );
   }
 
+  // PRODUCT NOT FOUND
   if (status === "failed" || !product) {
     return (
       <>
         <Header className="fixed" />
+
         <ButtonMessage />
+
         <main className="container-page px-4 py-20 text-center">
           <h1 className="text-2xl font-semibold text-text-primary mb-4">
             Produk tidak ditemukan
           </h1>
+
           <button
             type="button"
             onClick={() => navigate("/browse-product")}
-            className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary text-white text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Lihat Semua Produk
           </button>
         </main>
+
         <Footer />
       </>
     );
   }
 
-  const wishlisted = isWishlisted(product.id);
-  const galleryImages = product.images;
-  const badge = getProductBadge(product);
+  // PRODUCT DATA
 
-  // Cari slug kategori dari data/category.js (sumber kebenaran yang sama dipakai NavHeader & BrowseMain)
+  const wishlisted = isWishlisted(product.id);
+  const badge = getProductBadge(product);
+  const tags = Array.isArray(product.tags) ? product.tags : [];
+
+  // NORMALIZE GALLERY
+
+  const galleryImages = [];
+
+  if (product.image) {
+    galleryImages.push(product.image);
+  }
+
+  if (Array.isArray(product.images)) {
+    product.images.forEach((image) => {
+      const imageUrl = typeof image === "string" ? image : image?.image_url;
+
+      if (imageUrl && !galleryImages.includes(imageUrl)) {
+        galleryImages.push(imageUrl);
+      }
+    });
+  }
+
+  const displayedImg = selectedImg || galleryImages[0] || product.image || null;
+
+  // CATEGORY
   const productCategory = category.find((cat) => cat.name === product.category);
   const categorySlug = productCategory?.slug ?? "";
 
-  const relatedProducts = items.filter((p) => p.id !== product.id).slice(0, 4);
+  // RELATED PRODUCTS
+  const relatedProducts = items
+    .filter((item) => item.id !== product.id)
+    .filter((item) => !product.category || item.category === product.category)
+    .slice(0, 4);
 
+  // HANDLERS
   const handleAddToCart = () => {
+    if (product.stock <= 0) return;
+
     addToCart(product, quantity);
+  };
+
+  const handleBuyNow = () => {
+    if (product.stock <= 0) return;
+    const success = addToCart(product, quantity);
+    if (success !== false) {
+      navigate("/cart");
+    }
+  };
+  const decreaseQuantity = () => {
+    setQuantity((current) => Math.max(1, current - 1));
+  };
+  const increaseQuantity = () => {
+    setQuantity((current) => Math.min(product.stock, current + 1));
   };
 
   return (
@@ -133,38 +205,55 @@ export default function DetailPage() {
       <Header className="fixed" />
       <ButtonMessage />
       <main className="container-page px-4 mb-12">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1 text-sm text-text-secondary mt-6 mb-12">
+        {/* BREADCRUMB */}
+        <nav className="flex items-center gap-1 text-sm text-text-secondary mt-6 mb-8 overflow-x-auto whitespace-nowrap">
           {[
-            { label: "Beranda", to: "/" },
-            { label: "Toko", to: "/browse-product" },
-            { label: product.category, to: `/browse-product/${categorySlug}` },
-            { label: product.name, to: "#" },
-          ].map((item, i, arr) => (
-            <span key={item.label} className="flex items-center gap-1">
+            {
+              label: "Beranda",
+              to: "/",
+            },
+            {
+              label: "Toko",
+              to: "/browse-product",
+            },
+            {
+              label: product.category,
+              to: `/browse-product/${categorySlug}`,
+            },
+            {
+              label: product.name,
+              to: "#",
+            },
+          ].map((item, index, arr) => (
+            <span
+              key={`${item.label}-${index}`}
+              className="flex items-center gap-1 shrink-0"
+            >
               <Link
                 to={item.to}
                 className={
-                  i === arr.length - 1
-                    ? "text-text-secondary cursor-default pointer-events-none"
+                  index === arr.length - 1
+                    ? "text-text-secondary cursor-default pointer-events-none max-w-50 truncate"
                     : "text-text-secondary hover:text-text-primary transition-colors"
                 }
               >
                 {item.label}
               </Link>
-              {i < arr.length - 1 && (
-                <ChevronRight className="w-3.5 h-3.5 text-text-secondary" />
+
+              {index < arr.length - 1 && (
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
               )}
             </span>
           ))}
         </nav>
 
-        {/* ── Product Layout ── */}
+        {/*  PRODUCT MAIN */}
+
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left: Images */}
+          {/* LEFT - PRODUCT IMAGES */}
           <div className="w-full lg:w-xl shrink-0">
             {/* Main Image */}
-            <div className="relative w-full aspect-square rounded-2xl overflow-hidden">
+            <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-surface border border-border">
               {displayedImg ? (
                 <img
                   src={displayedImg}
@@ -172,61 +261,83 @@ export default function DetailPage() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <div className="w-full h-full flex items-center justify-center">
                   <ImageIcon className="w-10 h-10 text-gray-400" />
                 </div>
               )}
 
+              {/* Badge */}
+
               {badge && (
-                <span className="absolute top-4 left-4 bg-accent text-white text-sm px-3 py-1 rounded-full">
+                <span className="absolute top-4 left-4 bg-accent text-white text-sm px-3 py-1 rounded-full font-medium">
                   {badge.label}
                 </span>
               )}
             </div>
 
             {/* Thumbnails */}
-            <div className="flex gap-3 mt-3">
-              {galleryImages.map((img, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setSelectedImg(img)}
-                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors duration-300 ${displayedImg === img ? "border-primary" : "border-border"}`}
-                >
-                  {img ? (
+
+            {galleryImages.length > 0 && (
+              <div className="flex gap-3 mt-3 overflow-x-auto pb-1">
+                {galleryImages.map((image, index) => (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    onClick={() => setSelectedImg(image)}
+                    className={`
+                      w-16 h-16 shrink-0 rounded-xl overflow-hidden
+                      border-2 transition-colors duration-300
+                      ${
+                        displayedImg === image
+                          ? "border-primary"
+                          : "border-border hover:border-primary/40"
+                      }
+                    `}
+                  >
                     <img
-                      src={img}
-                      alt={`Thumbnail ${i + 1}`}
+                      src={image}
+                      alt={`${product.name} thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <ImageIcon className="w-10 h-10 text-gray-400" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Right: Detail */}
-          <div className="flex-1 flex flex-col gap-4">
-            {/* Name */}
+          {/* RIGHT - PRODUCT INFORMATION*/}
+          <div className="flex-1 flex flex-col gap-5">
+            {/* Product Name */}
             <div>
               <p className="text-sm text-text-secondary mb-1">
                 {product.brand} · {product.category}
               </p>
-              <h1 className="text-2xl font-bold text-text-primary mb-2">
+
+              <h1 className="text-2xl md:text-3xl font-bold text-text-primary mb-3">
                 {product.name}
               </h1>
-              <div className="flex items-center gap-3">
+
+              {/* Rating + Stock */}
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1">
                   <StarRating rating={product.rating} />
-                  <span className="text-base text-text-secondary ml-1">
-                    {product.rating} ({product.review})
+                  <span className="text-sm text-text-secondary ml-1">
+                    {product.rating}
+                  </span>
+                  <span className="text-sm text-text-secondary">
+                    ({product.review})
                   </span>
                 </div>
-                <span className="bg-success-light text-success text-sm font-medium px-2 py-0.5 rounded-full">
+                <span
+                  className={`
+                    text-sm font-medium px-2.5 py-1 rounded-full
+                    ${
+                      product.stock > 0
+                        ? "bg-success-light text-success"
+                        : "bg-red-50 text-red-500"
+                    }
+                  `}
+                >
                   {product.stock > 0
                     ? `✓ Stok tersedia (${product.stock})`
                     : "Stok habis"}
@@ -234,42 +345,45 @@ export default function DetailPage() {
               </div>
             </div>
 
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="
+                      px-2.5 py-1
+                      rounded-full
+                      bg-primary-light
+                      text-primary
+                      text-xs
+                      font-medium
+                    "
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Price */}
             <div className="bg-primary-light rounded-xl px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[28px] font-bold text-primary leading-10.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[28px] font-bold text-primary leading-10">
                   {product.discountPriceFormatted ??
                     product.regularPriceFormatted}
                 </span>
+
                 {product.discountPriceFormatted && (
                   <span className="text-lg text-text-secondary line-through">
                     {product.regularPriceFormatted}
                   </span>
                 )}
                 {badge?.type === "discount" && (
-                  <span className="bg-accent text-white text-sm px-2.5 py-0.5 rounded-full">
-                    Hemat {badge.label}
+                  <span className="bg-accent text-white text-xs px-2.5 py-1 rounded-full">
+                    {badge.label}
                   </span>
                 )}
-              </div>
-            </div>
-
-            {/* Color */}
-            <div>
-              <p className="text-sm text-text-primary mb-2">
-                Warna: <span className="text-primary">{selectedColor}</span>
-              </p>
-              <div className="flex gap-2">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setSelectedColor(color)}
-                    className={`h-8.5 px-3 rounded-lg text-sm border transition-colors duration-300 ${selectedColor === color ? "border-primary bg-primary-light text-primary" : "border-border text-text-primary hover:border-primary/40"}`}
-                  >
-                    {color}
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -277,30 +391,44 @@ export default function DetailPage() {
             <div>
               <p className="text-sm text-text-primary mb-2">Jumlah</p>
               <div className="flex items-center gap-3">
-                <div className="flex items-center border border-border rounded-xl overflow-hidden w-37.5">
+                <div className="flex items-center border border-border rounded-xl overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="w-11 h-9.5 text-lg text-text-primary hover:bg-surface transition-colors"
+                    onClick={decreaseQuantity}
+                    disabled={product.stock <= 0 || quantity <= 1}
+                    className="
+                      w-11 h-10
+                      flex items-center justify-center
+                      text-text-primary
+                      hover:bg-surface
+                      disabled:opacity-40
+                      disabled:cursor-not-allowed
+                      transition-colors
+                    "
                   >
-                    −
+                    <Minus className="w-4 h-4" />
                   </button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    readOnly
-                    className="w-13.5 h-9.5 text-center text-base border-x border-border bg-transparent outline-none text-text-primary"
-                  />
+                  <div className="w-14 h-10 flex items-center justify-center border-x border-border text-sm font-medium text-text-primary">
+                    {quantity}
+                  </div>
                   <button
                     type="button"
-                    onClick={() =>
-                      setQuantity((q) => Math.min(product.stock, q + 1))
-                    }
-                    className="w-11 h-9.5 text-lg text-text-primary hover:bg-surface transition-colors"
+                    onClick={increaseQuantity}
+                    disabled={product.stock <= 0 || quantity >= product.stock}
+                    className="
+                      w-11 h-10
+                      flex items-center justify-center
+                      text-text-primary
+                      hover:bg-surface
+                      disabled:opacity-40
+                      disabled:cursor-not-allowed
+                      transition-colors
+                    "
                   >
-                    +
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
+
                 <span className="text-sm text-text-secondary">
                   Stok: {product.stock} pcs
                 </span>
@@ -308,31 +436,63 @@ export default function DetailPage() {
             </div>
 
             {/* Buttons */}
-            <div className="flex flex-wrap items-center gap-3 mt-2">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
-                className="flex items-center justify-center gap-2 flex-1 sm:w-67 h-14 rounded-xl border-2 border-accent text-accent text-base font-medium hover:bg-accent hover:text-white transition-colors duration-300 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-accent disabled:cursor-not-allowed"
+                disabled={product.stock <= 0}
+                className="
+                  flex items-center justify-center gap-2
+                  flex-1 sm:min-w-60
+                  h-14
+                  rounded-xl
+                  border-2 border-accent
+                  text-accent
+                  text-base font-medium
+                  hover:bg-accent hover:text-white
+                  transition-colors duration-300
+                  disabled:opacity-40
+                  disabled:hover:bg-transparent
+                  disabled:hover:text-accent
+                  disabled:cursor-not-allowed
+                "
               >
                 <ShoppingCart className="w-4.5 h-4.5" strokeWidth={2} />
                 Tambah ke Keranjang
               </button>
+
               <button
                 type="button"
-                onClick={() => {
-                  const success = addToCart(product, quantity);
-                  if (success) navigate("/cart");
-                }}
-                disabled={product.stock === 0}
-                className="flex-1 sm:w-67 h-14 rounded-xl bg-accent border-2 border-accent text-white text-base font-medium hover:bg-white hover:text-accent transition-colors duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={handleBuyNow}
+                disabled={product.stock <= 0}
+                className="
+                  flex-1 sm:min-w-40
+                  h-14
+                  rounded-xl
+                  bg-accent
+                  border-2 border-accent
+                  text-white
+                  text-base font-medium
+                  hover:bg-white hover:text-accent
+                  transition-colors duration-300
+                  disabled:opacity-40
+                  disabled:cursor-not-allowed
+                "
               >
                 Beli Sekarang
               </button>
+
               <button
                 type="button"
                 onClick={() => toggleWishlist(product)}
-                className="w-12 h-14 rounded-xl border-2 border-border flex items-center justify-center hover:bg-surface transition-colors duration-300"
+                className="
+                  w-14 h-14
+                  rounded-xl
+                  border-2 border-border
+                  flex items-center justify-center
+                  hover:bg-surface
+                  transition-colors duration-300
+                "
               >
                 <Heart
                   className="w-6 h-6"
@@ -343,18 +503,28 @@ export default function DetailPage() {
               </button>
             </div>
 
-            {/* Delivery Cards */}
-            <div className="flex gap-2 mt-2">
+            {/* Delivery Information */}
+
+            <div className="grid grid-cols-3 gap-2 mt-1">
               {deliveryInfo.map(({ icon: Icon, label, sub }) => (
                 <div
                   key={label}
-                  className="flex-1 flex flex-col items-center text-center border border-border bg-surface rounded-lg py-2.5 px-1"
+                  className="
+                      flex flex-col items-center
+                      text-center
+                      border border-border
+                      bg-surface
+                      rounded-lg
+                      py-3 px-1
+                    "
                 >
                   <Icon className="w-4 h-4 text-primary mb-1" strokeWidth={2} />
+
                   <span className="text-xs text-text-primary leading-4">
                     {label}
                   </span>
-                  <span className="text-xs text-text-secondary leading-4">
+
+                  <span className="text-[11px] text-text-secondary leading-4">
                     {sub}
                   </span>
                 </div>
@@ -363,16 +533,29 @@ export default function DetailPage() {
           </div>
         </div>
 
-        {/* Description / Tabs */}
+        {/* DESCRIPTION / SPECIFICATION / REVIEW*/}
+
         <div className="mt-10 card-base overflow-hidden shadow-sm">
-          {/* Tab Nav */}
-          <div className="flex border-b border-border">
+          {/* Tabs */}
+
+          <div className="flex border-b border-border overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`w-28 h-14 text-sm font-medium transition-colors ${activeTab === tab ? "text-primary border-b-2 border-primary" : "text-text-secondary hover:text-text-primary"}`}
+                className={`
+                  min-w-28 px-4
+                  h-14
+                  text-sm font-medium
+                  transition-colors
+                  whitespace-nowrap
+                  ${
+                    activeTab === tab
+                      ? "text-primary border-b-2 border-primary"
+                      : "text-text-secondary hover:text-text-primary"
+                  }
+                `}
               >
                 {tab}
               </button>
@@ -380,39 +563,96 @@ export default function DetailPage() {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6 text-base text-text-secondary leading-relaxed">
-            {activeTab === "Deskripsi" && <p>{product.description}</p>}
 
-            {activeTab === "Spesifikasi" && (
-              <ul className="list-disc list-inside space-y-1">
-                {product.specifications
-                  .split("|")
-                  .map((spec) => spec.trim())
-                  .filter(Boolean)
-                  .map((spec) => (
-                    <li key={spec}>{spec}</li>
-                  ))}
-              </ul>
-            )}
+          <div className="p-6 text-sm md:text-base text-text-secondary leading-relaxed">
+            {/* DESCRIPTION */}
+
+            {activeTab === "Deskripsi" &&
+              (product.description ? (
+                <p className="whitespace-pre-line">{product.description}</p>
+              ) : (
+                <p className="text-text-secondary">
+                  Belum ada deskripsi untuk produk ini.
+                </p>
+              ))}
+
+            {/* SPECIFICATIONS */}
+
+            {activeTab === "Spesifikasi" &&
+              (product.specifications ? (
+                <ul className="list-disc list-inside space-y-2">
+                  {product.specifications
+                    .split("|")
+                    .map((spec) => spec.trim())
+                    .filter(Boolean)
+                    .map((spec, index) => (
+                      <li key={`${spec}-${index}`}>{spec}</li>
+                    ))}
+                </ul>
+              ) : (
+                <p className="text-text-secondary">
+                  Belum ada spesifikasi untuk produk ini.
+                </p>
+              ))}
+
+            {/* REVIEWS */}
 
             {activeTab.startsWith("Ulasan") && (
-              <p>Ulasan pelanggan akan ditampilkan di sini.</p>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="text-3xl font-bold text-text-primary">
+                      {product.rating}
+                    </p>
+
+                    <StarRating rating={product.rating} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-text-secondary">
+                      Berdasarkan {product.review} ulasan
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-4">
+                  <p className="text-text-secondary">
+                    Ulasan pelanggan akan ditampilkan di sini.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* ── Related Products ── */}
-        <div className="mt-10">
-          <h2 className="font-display text-xl md:text-2xl font-bold text-text-primary mb-5">
-            Produk Terkait
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {relatedProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+        {/* RELATED PRODUCTS*/}
+
+        {relatedProducts.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display text-xl md:text-2xl font-bold text-text-primary">
+                Produk Terkait
+              </h2>
+
+              {categorySlug && (
+                <Link
+                  to={`/browse-product/${categorySlug}`}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Lihat Semua
+                </Link>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard key={relatedProduct.id} product={relatedProduct} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </main>
+
       <Footer />
     </>
   );
