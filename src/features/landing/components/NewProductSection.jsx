@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import ProductCard from "@/features/products/components/ProductCard";
 import { fetchProducts } from "@/features/products/productsSlice";
+import { hasProductTag } from "@/utils/product";
 
 export default function NewProduct() {
   const dispatch = useDispatch();
@@ -18,7 +19,7 @@ export default function NewProduct() {
   }, [status, dispatch]);
 
   const newProducts = products
-    .filter((p) => p.tags.includes("new"))
+    .filter((product) => hasProductTag(product, "new"))
     .slice(0, 4);
 
   if (status === "loading" || status === "idle") {
@@ -58,6 +59,13 @@ export default function NewProduct() {
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
+
+      {/* Empty state */}
+      {newProducts.length === 0 && (
+        <div className="py-10 text-center text-text-secondary">
+          Belum ada produk terbaru.
+        </div>
+      )}
     </section>
   );
 }

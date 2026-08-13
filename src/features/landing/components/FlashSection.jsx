@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import ProductCard from "@/features/products/components/ProductCard";
 import { fetchProducts } from "@/features/products/productsSlice";
+import { hasProductTag } from "../../../utils/product";
 
 // Countdown timer — mulai dari 5 jam 21 menit 38 detik
 const Timer = 5 * 3600 + 21 * 60 + 38;
@@ -27,7 +28,6 @@ function useCountdown(initialSeconds) {
 
 export default function FlashDeal() {
   const { h, m, s } = useCountdown(Timer);
-
   const dispatch = useDispatch();
   const products = useSelector((state) => state.products.items);
   const status = useSelector((state) => state.products.status);
@@ -38,9 +38,9 @@ export default function FlashDeal() {
     }
   }, [status, dispatch]);
 
-  // Tampilkan hanya 4 produk pertama
+  // Tampilkan maksimal 4 produk dengan tag "flash"
   const flashProducts = products
-    .filter((p) => p.tags.includes("flash"))
+    .filter((product) => hasProductTag(product, "flash"))
     .slice(0, 4);
 
   if (status === "loading" || status === "idle") {
@@ -91,6 +91,13 @@ export default function FlashDeal() {
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
+
+      {/* Jika tidak ada flash product */}
+      {flashProducts.length === 0 && (
+        <div className="py-10 text-center text-text-secondary">
+          Belum ada produk Flash Deal.
+        </div>
+      )}
     </section>
   );
 }

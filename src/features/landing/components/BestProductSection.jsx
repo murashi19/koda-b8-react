@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import ProductCard from "@/features/products/components/ProductCard";
 import { fetchProducts } from "@/features/products/productsSlice";
+import { hasProductTag } from "../../../utils/product";
 
 export default function BestProduct() {
   const dispatch = useDispatch();
@@ -18,7 +19,7 @@ export default function BestProduct() {
   }, [status, dispatch]);
 
   const bestProducts = products
-    .filter((p) => p.tags.includes("best"))
+    .filter((product) => hasProductTag(product, "best"))
     .slice(0, 6);
 
   if (status === "loading" || status === "idle") {
@@ -30,7 +31,7 @@ export default function BestProduct() {
   }
 
   if (status === "failed") {
-    return null; // atau tampilkan pesan error, sesuai selera kamu
+    return null;
   }
 
   return (
@@ -57,6 +58,13 @@ export default function BestProduct() {
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
+
+        {/* Jika tidak ada product */}
+        {bestProducts.length === 0 && (
+          <div className="py-10 text-center text-text-secondary">
+            Belum ada produk unggulan.
+          </div>
+        )}
       </section>
     </div>
   );
