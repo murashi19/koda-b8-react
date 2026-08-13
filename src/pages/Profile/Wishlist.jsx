@@ -15,7 +15,7 @@ import { animateScroll } from "react-scroll";
 const ITEMS_PER_PAGE = 6; // kelipatan 3 biar grid cols-3 nya rapi
 
 export default function Wishlist() {
-  const { wishlist } = useWishlist();
+  const { wishlist, status, loadWishlist } = useWishlist();
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil(wishlist.length / ITEMS_PER_PAGE);
@@ -23,6 +23,11 @@ export default function Wishlist() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
+
+  useEffect(() => {
+    loadWishlist();
+  }, []);
+
   useEffect(() => {
     animateScroll.scrollToTop({
       duration: 700,
@@ -45,7 +50,11 @@ export default function Wishlist() {
               Wishlist ({wishlist.length})
             </h2>
 
-            {wishlist.length === 0 ? (
+            {status === "loading" && wishlist.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-text-secondary">
+                <p className="text-sm">Memuat wishlist...</p>
+              </div>
+            ) : wishlist.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-text-secondary">
                 <FaHeart className="w-12 h-12" strokeWidth={1} />
                 <p className="text-sm">Belum ada produk di wishlist kamu.</p>
