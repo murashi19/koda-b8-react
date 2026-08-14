@@ -92,8 +92,6 @@ export default function AddProductModal({
 }) {
   const isEditMode = Boolean(initialData);
 
-  // Tag disimpan di produk sebagai nama ("new", "flash", dst), tapi checkbox-nya
-  // butuh id tag (buat dikirim ke backend) — jadi perlu di-mapping ke id lewat daftar tags asli.
   const initialCheckedTagIds = new Set(
     tags.filter((t) => initialData?.tags?.includes(t.name)).map((t) => t.id),
   );

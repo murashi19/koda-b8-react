@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { CheckCircle, Shield, Lock, AlertCircle } from "lucide-react";
+import {
+  CheckCircle,
+  Shield,
+  Lock,
+  AlertCircle,
+  ImageIcon,
+} from "lucide-react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import useCart from "@/features/cart/useCart";
@@ -125,11 +131,18 @@ export default function CheckoutStep3() {
           </p>
           {cart.map((item) => (
             <div key={item.id} className="flex items-center gap-3">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-12 h-12 rounded-lg object-cover border border-border"
-              />
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-12 h-12 rounded-lg object-cover border border-border"
+                />
+              ) : (
+                <div className="w-12 h-12  rounded-xl flex items-center justify-center bg-gray-100 border border-border shrink-0">
+                  <ImageIcon className="w-10 h-10 text-gray-400" />
+                </div>
+              )}
+
               <div className="flex-1 flex flex-col ml-1">
                 <span className="text-sm font-medium text-text-primary">
                   {item.name}

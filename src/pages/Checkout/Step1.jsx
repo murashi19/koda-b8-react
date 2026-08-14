@@ -29,9 +29,6 @@ export default function CheckoutStep1() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [addressError, setAddressError] = useState("");
-
-  // Default ke alamat utama/pertama kalau user belum milih apa-apa —
-  // dihitung langsung pas render (bukan di effect), biar gak ada setState nyusul yg bikin cascading render
   const defaultAddressId = useMemo(() => {
     if (addresses.length === 0) return null;
     const main = addresses.find((a) => a.isDefault);
@@ -40,7 +37,6 @@ export default function CheckoutStep1() {
 
   const effectiveAddressId = selectedAddressId ?? defaultAddressId;
 
-  // Belum punya alamat sama sekali -> wajib isi dulu sebelum bisa lanjut
   const mustCreateFirst =
     addressesStatus === "succeeded" && addresses.length === 0;
 

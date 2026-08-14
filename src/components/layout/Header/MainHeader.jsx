@@ -35,14 +35,14 @@ function MainHeader() {
     if (isLoggedIn && wishlistStatus === "idle") {
       loadWishlist();
     }
-  }, [isLoggedIn, wishlistStatus]);
+  }, [isLoggedIn, loadWishlist, wishlistStatus]);
 
   // Load cart from backend once per session after login
   useEffect(() => {
     if (isLoggedIn && cartStatus === "idle") {
       loadCart();
     }
-  }, [isLoggedIn, cartStatus]);
+  }, [isLoggedIn, cartStatus, loadCart]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -57,8 +57,9 @@ function MainHeader() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (query.trim()) {
-      navigate(`/browse-product?q=${encodeURIComponent(query.trim())}`);
+    const value = query.trim();
+    if (value) {
+      navigate(`/browse-product?q=${encodeURIComponent(value)}`);
     }
   };
 

@@ -1,4 +1,5 @@
 import useCart from "@/features/cart/useCart";
+import { ImageIcon } from "lucide-react";
 
 export default function OrderSummary() {
   const { cart } = useCart();
@@ -21,11 +22,18 @@ export default function OrderSummary() {
           ) : (
             cart.map((item) => (
               <div key={item.id} className="flex items-center gap-3">
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-14 h-14 rounded-xl object-cover border border-border shrink-0"
-                />
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-14 h-14 rounded-xl object-cover border border-border shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gray-100 border border-border shrink-0">
+                    <ImageIcon className="w-10 h-10 text-gray-400" />
+                  </div>
+                )}
+
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary leading-snug truncate">
                     {item.name}

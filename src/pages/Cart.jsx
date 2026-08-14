@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trash2, Heart, Shield, ShoppingCart } from "lucide-react";
+import { Trash2, Heart, Shield, ShoppingCart, ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // Data
@@ -83,11 +83,15 @@ export default function Cart() {
                   <div className="flex gap-4">
                     {/* Product Image */}
                     <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-gray-400" />
+                      )}
                     </div>
 
                     {/* Product Info */}
