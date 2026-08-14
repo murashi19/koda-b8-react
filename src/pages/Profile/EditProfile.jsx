@@ -86,12 +86,9 @@ export default function EditProfile() {
     if (!dateString) return "";
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return "";
+    const [day, month, year] = d.toLocaleDateString("id-ID").split("/");
 
-    const thn = d.getFullYear();
-    const bln = String(d.getMonth() + 1).padStart(2, "0");
-    const tgl = String(d.getDate()).padStart(2, "0");
-
-    return `${thn}-${bln}-${tgl}`;
+    return `${day}-${month}-${year}`;
   };
 
   useEffect(() => {
@@ -145,7 +142,7 @@ export default function EditProfile() {
         type: "success",
         message: "Profile berhasil diperbarui",
       });
-      setIsEditing(false); // <-- balik ke view mode setelah sukses simpan
+      setIsEditing(false);
     } catch (error) {
       console.error(error);
       const message =
