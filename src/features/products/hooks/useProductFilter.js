@@ -3,14 +3,12 @@ import { useMemo } from "react";
 export default function useProductFilter(
   products = [],
   category,
-  searchQuery = "",
   selectedBrands = [],
   selectedRating = null,
   inStock = false,
   priceMax = 20000000,
 ) {
   const filteredProducts = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
     return (
       products
         // CATEGORY
@@ -47,32 +45,8 @@ export default function useProductFilter(
           }
           return Number(p.stock) > 0;
         })
-        // SEARCH
-        .filter((p) => {
-          if (!query) {
-            return true;
-          }
-
-          const name = String(p.name ?? "").toLowerCase();
-          const brand = String(p.brand ?? "").toLowerCase();
-          const productCategory = String(p.category ?? "").toLowerCase();
-
-          return (
-            name.includes(query) ||
-            brand.includes(query) ||
-            productCategory.includes(query)
-          );
-        })
     );
-  }, [
-    products,
-    category,
-    searchQuery,
-    selectedBrands,
-    selectedRating,
-    inStock,
-    priceMax,
-  ]);
+  }, [products, category, selectedBrands, selectedRating, inStock, priceMax]);
 
   return {
     filteredProducts,

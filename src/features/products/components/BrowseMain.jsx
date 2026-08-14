@@ -19,13 +19,6 @@ export default function BrowseMain() {
   const products = useSelector((state) => state.products.items);
   const status = useSelector((state) => state.products.status);
 
-  // FETCH PRODUCTS
-  useEffect(() => {
-    if (status === "idle") {
-      dispatch(fetchProducts());
-    }
-  }, [status, dispatch]);
-
   // URL STATE
   const searchQuery = searchParams.get("q") ?? "";
   const selectedBrands = searchParams.getAll("brand");
@@ -33,6 +26,15 @@ export default function BrowseMain() {
   const inStock = searchParams.get("stock") === "1";
   const priceMax = Number(searchParams.get("priceMax")) || 20000000;
   const page = Number(searchParams.get("page")) || 1;
+
+  // FETCH PRODUCTS
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) {
+      params.set("search[name]", searchQuery);
+    }
+    dispatch(fetchProducts(params.toString()));
+  }, [dispatch, searchQuery]);
 
   // URL PARAM HELPER
   const setParam = useCallback(
@@ -107,7 +109,6 @@ export default function BrowseMain() {
   const { filteredProducts } = useProductFilter(
     products,
     selectedCategory?.name,
-    searchQuery,
     selectedBrands,
     selectedRating,
     inStock,

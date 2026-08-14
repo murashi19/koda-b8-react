@@ -45,7 +45,7 @@ export function mapProduct(p) {
     review: p.review_count ?? p.review ?? 0,
     tags: mapTags(p.tags),
     stock: Number(p.stock) || 0,
-    description: p.description ?? "",
+    description: p.detail?.description ?? "",
     gallery: Array.isArray(p.gallery) ? p.gallery : [],
   };
 }
@@ -70,9 +70,10 @@ function mapProductDetail(p) {
 // GET ALL PRODUCTS
 export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
-  async (_, { rejectWithValue }) => {
+  async (queryString = "", { rejectWithValue }) => {
     try {
-      const res = await api.get("/products");
+      const url = queryString ? `/products?${queryString}` : "/products";
+      const res = await api.get(url);
       return (res.data.data || []).map(mapProduct);
     } catch (err) {
       return rejectWithValue(
