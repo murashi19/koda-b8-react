@@ -5,7 +5,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // react-icons
-import { FiSearch, FiEye, FiX } from "react-icons/fi";
+import { FiSearch, FiEye } from "react-icons/fi";
 import { RiFilter3Line } from "react-icons/ri";
 
 // Components
@@ -15,12 +15,11 @@ import Sidebar from "@/features/admin/components/AdminSidebar";
 import { toggleSidebar } from "@/features/admin/dashboardSlice";
 import {
   fetchAllOrdersAdmin,
-  fetchOrderDetailAdmin,
   adminUpdateOrderStatus,
   ORDER_STATUS_LABELS,
 } from "@/features/orders/ordersSlice";
 import { PAYMENT_METHOD_LABELS } from "@/features/checkout/data/paymentMethods";
-import { SHIPPING_METHOD_LABELS } from "@/features/checkout/data/shippingMethods";
+import OrderDetailModal from "./OrderDetail";
 
 const formatRp = (n) => "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 const formatDate = (iso) =>
@@ -41,6 +40,15 @@ const searchSchema = yup.object({
     .matches(/^[a-zA-Z0-9\s\-_.#]*$/, "Karakter tidak valid"),
 });
 
+const statusConfig = {
+  PENDING: { bg: "bg-amber-100", text: "text-amber-600" },
+  PAID: { bg: "bg-primary-light", text: "text-primary" },
+  PROCESSING: { bg: "bg-indigo-100", text: "text-indigo-600" },
+  SHIPPED: { bg: "bg-indigo-100", text: "text-indigo-600" },
+  DELIVERED: { bg: "bg-success-light", text: "text-success" },
+  CANCELLED: { bg: "bg-red-100", text: "text-red-600" },
+};
+
 // Tab & status sesuai enum order_status beneran di DB
 const tabs = [
   { key: "all", label: "Semua" },
@@ -51,15 +59,6 @@ const tabs = [
   { key: "DELIVERED", label: "Terkirim" },
   { key: "CANCELLED", label: "Dibatalkan" },
 ];
-
-const statusConfig = {
-  PENDING: { bg: "bg-amber-100", text: "text-amber-600" },
-  PAID: { bg: "bg-primary-light", text: "text-primary" },
-  PROCESSING: { bg: "bg-indigo-100", text: "text-indigo-600" },
-  SHIPPED: { bg: "bg-indigo-100", text: "text-indigo-600" },
-  DELIVERED: { bg: "bg-success-light", text: "text-success" },
-  CANCELLED: { bg: "bg-red-100", text: "text-red-600" },
-};
 
 // Urutan status "maju" yang wajar buat dropdown ganti status di tabel
 const STATUS_OPTIONS = [
@@ -72,150 +71,6 @@ const STATUS_OPTIONS = [
 ];
 
 // Modal detail pesanan
-function OrderDetailModal({ orderId, onClose }) {
-  const dispatch = useDispatch();
-  const order = useSelector((state) => state.orders.detailsById[orderId]);
-  const detailStatus = useSelector(
-    (state) => state.orders.detailStatusById[orderId],
-  );
-
-  useEffect(() => {
-    if (!order) dispatch(fetchOrderDetailAdmin(orderId));
-  }, [orderId, order, dispatch]);
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <section className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl">
-        <header className="flex items-center justify-between px-6 py-5 border-b border-border shrink-0">
-          <h2 className="text-lg font-semibold text-text-primary">
-            Detail Pesanan {order ? `#${order.orderCode}` : ""}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface transition-colors cursor-pointer"
-          >
-            <FiX className="text-[18px] text-text-secondary" />
-          </button>
-        </header>
-
-        <div className="flex flex-col gap-4 px-6 py-5 overflow-y-auto text-sm">
-          {detailStatus === "loading" && !order && (
-            <p className="text-text-secondary text-center py-8">Memuat...</p>
-          )}
-          {detailStatus === "failed" && !order && (
-            <p className="text-red-500 text-center py-8">
-              Gagal memuat detail pesanan.
-            </p>
-          )}
-          {order && (
-            <>
-              <div>
-                <p className="font-semibold text-text-primary">
-                  {order.customerName}
-                </p>
-                <p className="text-text-secondary text-xs">
-                  {order.customerEmail}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-text-secondary">Tanggal</p>
-                  <p className="text-text-primary">
-                    {formatDate(order.createdAt)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary">Pengiriman</p>
-                  <p className="text-text-primary">
-                    {SHIPPING_METHOD_LABELS[order.shippingMethod] ??
-                      order.shippingMethod}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary">Pembayaran</p>
-                  <p className="text-text-primary">
-                    {PAYMENT_METHOD_LABELS[order.paymentMethod] ??
-                      order.paymentMethod}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary">Status</p>
-                  <span
-                    className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${(statusConfig[order.status] ?? statusConfig.PENDING).bg} ${(statusConfig[order.status] ?? statusConfig.PENDING).text}`}
-                  >
-                    {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                  </span>
-                </div>
-              </div>
-
-              {order.address && (
-                <div>
-                  <p className="text-xs text-text-secondary mb-1">
-                    Alamat Pengiriman
-                  </p>
-                  <p className="text-text-primary">
-                    {order.address.detail}
-                    {order.address.subdistrict
-                      ? `, ${order.address.subdistrict}`
-                      : ""}
-                    {order.address.district
-                      ? `, ${order.address.district}`
-                      : ""}
-                    {`, ${order.address.city}, ${order.address.province}`}
-                    {order.address.postalCode
-                      ? ` ${order.address.postalCode}`
-                      : ""}
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <p className="text-xs text-text-secondary mb-2">Item Pesanan</p>
-                <ul className="flex flex-col gap-2">
-                  {order.items.map((item, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center justify-between border-b border-border last:border-0 pb-2"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-10 h-10 rounded-lg object-cover border border-border"
-                        />
-                        <div>
-                          <p className="text-text-primary">{item.name}</p>
-                          <p className="text-xs text-text-secondary">
-                            {item.qty} x {formatRp(item.price)}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="font-medium text-text-primary">
-                        {formatRp(item.subtotal)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="flex justify-between pt-2 border-t border-border font-semibold text-text-primary">
-                <span>Total</span>
-                <span className="text-primary">{formatRp(order.total)}</span>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
 
 // Main Page
 export default function OrderList() {
@@ -257,7 +112,7 @@ export default function OrderList() {
     const q = searchQuery.toLowerCase();
     const matchSearch =
       o.orderCode?.toLowerCase().includes(q) ||
-      o.customerName?.toLowerCase().includes(q);
+      o.customer?.full_name?.toLowerCase().includes(q);
     const matchTab = activeTab === "all" || o.status === activeTab;
     return matchSearch && matchTab;
   });
@@ -393,10 +248,10 @@ export default function OrderList() {
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1">
                             <strong className="font-medium text-text-primary">
-                              {o.customerName}
+                              {o.customer.full_name}
                             </strong>
                             <small className="text-text-secondary text-[13px]">
-                              {o.customerEmail}
+                              {o.customer.email}
                             </small>
                           </div>
                         </td>

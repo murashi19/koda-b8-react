@@ -14,7 +14,7 @@ export const ORDER_STATUS_LABELS = {
   CANCELLED: "Dibatalkan",
 };
 
-// ---- Mapper: baris header order (GET /orders) -> shape frontend ----
+// ---- Mapper: baris header order (GET /orders)
 function normalizeOrderSummary(o) {
   return {
     id: o.id,
@@ -38,74 +38,59 @@ function normalizeOrderSummary(o) {
   };
 }
 
-// ---- Mapper: baris flat hasil JOIN order+order_items (GET /orders/:id) -> 1 order + items[] ----
-function normalizeOrderDetail(rows) {
-  if (!rows?.length) return null;
-  const first = rows[0];
+// ---- Mapper: order detail (GET /orders/:id atau /admin/orders/:id)
+function normalizeOrderDetail(o) {
+  if (!o) return null;
   return {
-    ...normalizeOrderSummary(first),
-    customerName: first.full_name,
-    customerEmail: first.email,
-    // Cuma keisi kalau row-nya dari GetOrderDetailAdmin (admin panel); dari
-    // GetOrderDetail biasa (customer) field-field ini undefined dan address jadi null.
-    address: first.address_detail
+    ...normalizeOrderSummary(o),
+    customer: o.customer ? { full_name: o.customer.full_name } : undefined,
+    user: o.user ? { email: o.user.email } : undefined,
+    address: o.address
       ? {
-          label: first.address_label,
-          province: first.address_province,
-          city: first.address_city,
-          district: first.address_district,
-          subdistrict: first.address_subdistrict,
-          postalCode: first.address_postal_code,
-          detail: first.address_detail,
-          note: first.address_note,
+          label: o.address.label,
+          province: o.address.province,
+          city: o.address.city,
+          district: o.address.district,
+          subdistrict: o.address.subdistrict,
+          postalCode: o.address.postal_code,
+          detail: o.address.address,
+          note: o.address.note,
         }
       : null,
-    items: rows.map((r) => ({
-      productId: r.product_id,
-      name: r.name,
-      image: r.image,
-      price: Number(r.price),
-      qty: r.qty,
-      subtotal: Number(r.subtotal),
-    })),
   };
 }
 
-// ---- Mapper: baris admin (GET /admin/orders) -> shape frontend, termasuk data pelanggan ----
+// ---- Mapper: baris admin (GET /admin/orders)
 function normalizeAdminOrderSummary(o) {
   return {
     ...normalizeOrderSummary(o),
-    customerName: o.full_name,
-    customerEmail: o.email,
+    customer: {
+      full_name: o.customer?.full_name,
+      email: o.user?.email,
+    },
     itemCount: Number(o.item_count ?? 0),
   };
 }
-// Beda dari GetOrderDetail: items di sini udah di-nest sama backend, gak perlu digroup manual.
+
 function normalizeCheckoutOrder(o) {
   return {
     ...normalizeOrderSummary(o),
-    items: (o.items ?? []).map((r) => ({
-      productId: r.product_id,
-      name: r.name,
-      image: r.image,
-      price: Number(r.price),
-      qty: r.qty,
-      subtotal: Number(r.subtotal),
-    })),
   };
 }
 
 const initialState = {
-  orders: [], // ringkasan order (dari GET /orders) — punya customer yang lagi login
+  orders: [], // ringkasan order (dari GET /orders)
   status: "idle",
   error: null,
-  detailsById: {},
+  detailsById: {}, // detail order customer (GET /orders/:id)
   detailStatusById: {},
   placeOrderStatus: "idle",
   placeOrderError: null,
-  adminOrders: [], // semua order semua customer (dari GET /admin/orders) — dipakai admin panel
+  adminOrders: [], // semua order semua customer (dari GET /admin/orders)
   adminOrdersStatus: "idle",
   adminOrdersError: null,
+  adminDetailsById: {}, // detail order admin (GET /admin/orders/:id)
+  adminDetailStatusById: {},
 };
 
 export const fetchOrders = createAsyncThunk(
@@ -133,7 +118,6 @@ export const fetchOrderDetail = createAsyncThunk(
 );
 
 // Checkout: POST /orders. Backend yang narik item dari cart user,
-// validasi stok, insert order + order_items, kurangin stok, dan kosongin cart_items.
 export const placeOrder = createAsyncThunk(
   "orders/placeOrder",
   async (
@@ -158,7 +142,6 @@ export const placeOrder = createAsyncThunk(
   },
 );
 
-// "Bayar Sekarang" dari daftar pesanan (order status PENDING).
 // Belum ada payment gateway, jadi ini cuma nandain order sebagai sudah dibayar.
 export const payOrder = createAsyncThunk(
   "orders/payOrder",
@@ -280,23 +263,23 @@ const ordersSlice = createSlice({
         state.adminOrdersError = action.payload;
       })
       .addCase(fetchOrderDetailAdmin.pending, (state, action) => {
-        state.detailStatusById[action.meta.arg] = "loading";
+        state.adminDetailStatusById[action.meta.arg] = "loading";
       })
       .addCase(fetchOrderDetailAdmin.fulfilled, (state, action) => {
         const detail = action.payload;
         if (!detail) return;
-        state.detailsById[detail.id] = detail;
-        state.detailStatusById[detail.id] = "succeeded";
+        state.adminDetailsById[detail.id] = detail;
+        state.adminDetailStatusById[detail.id] = "succeeded";
       })
       .addCase(fetchOrderDetailAdmin.rejected, (state, action) => {
-        state.detailStatusById[action.meta.arg] = "failed";
+        state.adminDetailStatusById[action.meta.arg] = "failed";
       })
       .addCase(adminUpdateOrderStatus.fulfilled, (state, action) => {
         const updated = action.payload;
         const order = state.adminOrders.find((o) => o.id === updated.id);
         if (order) order.status = updated.status;
-        if (state.detailsById[updated.id]) {
-          state.detailsById[updated.id].status = updated.status;
+        if (state.adminDetailsById[updated.id]) {
+          state.adminDetailsById[updated.id].status = updated.status;
         }
       })
       .addCase(logout, (state) => {
@@ -306,6 +289,8 @@ const ordersSlice = createSlice({
         state.error = null;
         state.adminOrders = [];
         state.adminOrdersStatus = "idle";
+        state.adminDetailsById = {};
+        state.adminDetailStatusById = {};
       });
   },
 });
