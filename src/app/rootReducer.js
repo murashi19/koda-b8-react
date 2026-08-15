@@ -7,6 +7,7 @@ import auth from "@/features/auth/authSlice";
 import orders from "@/features/orders/ordersSlice";
 import products from "@/features/products/productsSlice";
 import dashboard from "@/features/admin/dashboardSlice";
+import customers from "@/features/admin/customersSlice";
 import addresses from "@/features/address/addressSlice";
 import wishlist from "@/features/wishlist/wishlistSlice";
 import cart from "@/features/cart/cartSlice";
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
   orders,
   products,
   dashboard,
+  customers,
   modal,
   addresses,
   wishlist,

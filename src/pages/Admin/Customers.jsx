@@ -1,24 +1,20 @@
-/* eslint-disable react-hooks/incompatible-library */
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useDispatch, useSelector } from "react-redux";
 
 // react-icons
-import { FiSearch, FiEye, FiMail } from "react-icons/fi";
-import { LuUsers, LuTrendingUp, LuShoppingBag, LuStar } from "react-icons/lu";
+import { FiSearch, FiEye, FiMail, FiX } from "react-icons/fi";
+import { LuUsers, LuTrendingUp, LuShoppingBag } from "react-icons/lu";
 
 // Components
 import Header from "@/features/admin/components/AdminHeader";
 import Sidebar from "@/features/admin/components/AdminSidebar";
 
-// Customer Data
-import {
-  customers,
-  customerStats,
-  customerGrowth,
-} from "@/features/admin/data/customers";
-const customersData = [...customers];
+import { fetchCustomers, setPage } from "@/features/admin/customersSlice";
+import { toggleSidebar } from "@/features/admin/dashboardSlice";
+import { getFullImageUrl } from "@/lib/imageUrl";
 
 // Yup Schema
 const searchSchema = yup.object({
@@ -29,30 +25,118 @@ const searchSchema = yup.object({
     .matches(/^[a-zA-Z0-9\s\-_.#]*$/, "Karakter tidak valid"),
 });
 
-const tierConfig = {
-  platinum: { label: "Platinum", bg: "bg-primary-light", text: "text-primary" },
-  gold: { label: "Gold", bg: "bg-amber-100", text: "text-amber-600" },
-  silver: { label: "Silver", bg: "bg-surface", text: "text-text-secondary" },
-  bronze: { label: "Bronze", bg: "bg-orange-100", text: "text-orange-600" },
-};
-
-const formatRupiah = (n) => `Rp ${n.toLocaleString("id-ID")}`;
-
 const getInitials = (name) =>
-  name
+  (name || "?")
     .split(" ")
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
 
+// Detail Modal
+function CustomerDetailModal({ customer, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md flex flex-col gap-4 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-text-primary">
+            Detail Pelanggan
+          </h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface transition-colors cursor-pointer"
+          >
+            <FiX className="text-[18px] text-text-secondary" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {getFullImageUrl(customer.avatar) ? (
+            <img
+              src={getFullImageUrl(customer.avatar)}
+              alt={customer.name}
+              className="w-14 h-14 rounded-full object-cover border border-border"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-primary-light text-primary text-base font-semibold flex items-center justify-center shrink-0">
+              {getInitials(customer.name)}
+            </div>
+          )}
+          <div>
+            <p className="font-semibold text-text-primary">{customer.name}</p>
+            <p className="text-sm text-text-secondary">{customer.email}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-text-secondary text-xs mb-0.5">No. Telepon</p>
+            <p className="text-text-primary font-medium">
+              {customer.phone || "-"}
+            </p>
+          </div>
+          <div>
+            <p className="text-text-secondary text-xs mb-0.5">Kota</p>
+            <p className="text-text-primary font-medium">{customer.city}</p>
+          </div>
+          <div>
+            <p className="text-text-secondary text-xs mb-0.5">Bergabung</p>
+            <p className="text-text-primary font-medium">{customer.joinDate}</p>
+          </div>
+          <div>
+            <p className="text-text-secondary text-xs mb-0.5">Status Akun</p>
+            <p className="text-text-primary font-medium">
+              {customer.isVerified ? "Terverifikasi" : "Belum Verifikasi"}
+              {!customer.isActive && " • Nonaktif"}
+            </p>
+          </div>
+          <div>
+            <p className="text-text-secondary text-xs mb-0.5">Total Pesanan</p>
+            <p className="text-text-primary font-medium">
+              {customer.totalOrders}
+            </p>
+          </div>
+          <div>
+            <p className="text-text-secondary text-xs mb-0.5">Total Belanja</p>
+            <p className="text-primary font-semibold">
+              {customer.totalSpendingFormatted}
+            </p>
+          </div>
+        </div>
+
+        <a
+          href={`mailto:${customer.email}`}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white btn-accent rounded-xl transition-colors cursor-pointer"
+        >
+          <FiMail className="text-[15px]" />
+          Kirim Email
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // Main Page
 export default function CustomerList() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const dispatch = useDispatch();
+  const { sidebarOpen } = useSelector((state) => state.dashboard);
+  const {
+    items: customers,
+    status,
+    stats,
+    pagination,
+  } = useSelector((state) => state.customers);
+
+  const [detailTarget, setDetailTarget] = useState(null);
 
   const {
+    control,
     register,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(searchSchema),
@@ -60,19 +144,55 @@ export default function CustomerList() {
     mode: "onChange",
   });
 
-  const searchQuery = watch("query") ?? "";
+  const searchQuery = useWatch({ control, name: "query" }) ?? "";
+  const currentPage = pagination.currentPage;
+  const itemsPerPage = pagination.itemsPerPage;
 
-  // Filter logic
-  const filtered = customersData.filter((c) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(q) ||
-      c.email.toLowerCase().includes(q) ||
-      c.city.toLowerCase().includes(q)
-    );
-  });
+  // reset ke halaman 1 tiap kali pencarian berubah
+  useEffect(() => {
+    if (currentPage !== 1) {
+      dispatch(setPage(1));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
-  const maxGrowth = Math.max(...customerGrowth.map((g) => g.value));
+  // fetch (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      params.set("page", currentPage);
+      params.set("limit", itemsPerPage);
+      if (searchQuery.trim()) {
+        params.set("search[name]", searchQuery.trim());
+      }
+      dispatch(fetchCustomers(params.toString()));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [dispatch, currentPage, itemsPerPage, searchQuery]);
+
+  const summaryCards = [
+    {
+      icon: LuUsers,
+      iconBg: "bg-success-light",
+      iconColor: "text-success",
+      value: stats.total_customers,
+      label: "Total Pelanggan",
+    },
+    {
+      icon: LuTrendingUp,
+      iconBg: "bg-primary-light",
+      iconColor: "text-primary",
+      value: stats.new_this_month,
+      label: "Pelanggan Baru (Bulan Ini)",
+    },
+    {
+      icon: LuShoppingBag,
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
+      value: Number(stats.avg_orders || 0).toFixed(1),
+      label: "Rata-rata Pesanan / Pelanggan",
+    },
+  ];
 
   return (
     <div className="flex min-h-screen bg-surface font-sans text-secondary">
@@ -83,7 +203,7 @@ export default function CustomerList() {
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <Header
-          onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          onToggleSidebar={() => dispatch(toggleSidebar())}
           onSearch={(query) => console.log("search:", query)}
         />
 
@@ -95,73 +215,18 @@ export default function CustomerList() {
           </h1>
 
           {/* Customer Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-            <article className="p-6 card-base shadow-sm">
-              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-success-light mb-3">
-                <LuUsers className="text-[18px] text-success" />
-              </div>
-              <h2 className="text-3xl font-bold mb-2">
-                {customerStats.totalCustomers.toLocaleString("id-ID")}
-              </h2>
-              <p className="text-sm text-text-secondary">Total Pelanggan</p>
-            </article>
-
-            <article className="p-6 card-base shadow-sm">
-              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-primary-light mb-3">
-                <LuTrendingUp className="text-[18px] text-primary" />
-              </div>
-              <h2 className="text-3xl font-bold mb-2">
-                {customerStats.newThisMonth}
-              </h2>
-              <p className="text-sm text-text-secondary">
-                Pelanggan Baru (Bulan Ini)
-              </p>
-            </article>
-
-            <article className="p-6 card-base shadow-sm">
-              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-orange-100 mb-3">
-                <LuShoppingBag className="text-[18px] text-orange-600" />
-              </div>
-              <h2 className="text-3xl font-bold mb-2">
-                {customerStats.avgOrders}
-              </h2>
-              <p className="text-sm text-text-secondary">Rata-rata Pesanan</p>
-            </article>
-
-            <article className="p-6 card-base shadow-sm">
-              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-amber-100 mb-3">
-                <LuStar className="text-[18px] text-amber-500" />
-              </div>
-              <h2 className="text-3xl font-bold mb-2">
-                {customerStats.satisfaction}/5
-              </h2>
-              <p className="text-sm text-text-secondary">Kepuasan Pelanggan</p>
-            </article>
-          </div>
-
-          {/* Chart */}
-          <div className="p-6 card-base shadow-sm">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-text-primary">
-                Pertumbuhan Pelanggan Baru (2026)
-              </h2>
-            </div>
-
-            <div className="h-60 rounded-xl bg-[repeating-linear-gradient(to_top,#f1f5f9_0,#f1f5f9_1px,transparent_1px,transparent_40px)] flex items-end justify-around gap-4 px-6 pb-4">
-              {customerGrowth.map((g) => (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {summaryCards.map((s) => (
+              <article key={s.label} className="p-6 card-base shadow-sm">
                 <div
-                  key={g.month}
-                  className="flex flex-col items-center gap-2 flex-1 h-full justify-end"
+                  className={`w-9 h-9 flex items-center justify-center rounded-full ${s.iconBg} mb-3`}
                 >
-                  <div
-                    className="w-full max-w-10 bg-primary rounded-t-md transition-all"
-                    style={{ height: `${(g.value / maxGrowth) * 85}%` }}
-                    title={`${g.month}: ${g.value}`}
-                  />
-                  <span className="text-xs text-text-secondary">{g.month}</span>
+                  <s.icon className={`text-[18px] ${s.iconColor}`} />
                 </div>
-              ))}
-            </div>
+                <h2 className="text-3xl font-bold mb-2">{s.value}</h2>
+                <p className="text-sm text-text-secondary">{s.label}</p>
+              </article>
+            ))}
           </div>
 
           {/* Search */}
@@ -171,7 +236,7 @@ export default function CustomerList() {
               <input
                 {...register("query")}
                 type="text"
-                placeholder="Cari nama, email, atau kota..."
+                placeholder="Cari nama atau email..."
                 className={`w-full h-12 pl-9 pr-4 rounded-xl border text-sm text-text-primary bg-white outline-none transition-colors ${errors.query ? "border-red-400 focus:border-red-500" : "border-border focus:border-primary"}`}
               />
             </div>
@@ -184,6 +249,10 @@ export default function CustomerList() {
 
           {/* Table */}
           <div className="card-base shadow-sm overflow-hidden">
+            <div className="px-5 py-4 font-semibold text-text-primary border-b border-border">
+              {pagination.totalItems} Pelanggan
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-surface">
@@ -194,7 +263,7 @@ export default function CustomerList() {
                       "Bergabung",
                       "Total Pesanan",
                       "Total Belanja",
-                      "Tier",
+                      "Status",
                       "Aksi",
                     ].map((h) => (
                       <th
@@ -207,7 +276,16 @@ export default function CustomerList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {status === "loading" ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="py-12 text-center text-sm text-text-secondary"
+                      >
+                        Memuat pelanggan...
+                      </td>
+                    </tr>
+                  ) : customers.length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
@@ -217,7 +295,7 @@ export default function CustomerList() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((c) => (
+                    customers.map((c) => (
                       <tr
                         key={c.id}
                         className="border-t border-border hover:bg-surface transition-colors"
@@ -225,9 +303,17 @@ export default function CustomerList() {
                         {/* Profile */}
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary-light text-primary text-sm font-semibold flex items-center justify-center shrink-0">
-                              {getInitials(c.name)}
-                            </div>
+                            {getFullImageUrl(c.avatar) ? (
+                              <img
+                                src={getFullImageUrl(c.avatar)}
+                                alt={c.name}
+                                className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-primary-light text-primary text-sm font-semibold flex items-center justify-center shrink-0">
+                                {getInitials(c.name)}
+                              </div>
+                            )}
                             <div className="flex flex-col">
                               <strong className="font-medium text-text-primary">
                                 {c.name}
@@ -256,15 +342,21 @@ export default function CustomerList() {
 
                         {/* Total Spending */}
                         <td className="px-4 py-4 font-medium text-primary">
-                          {formatRupiah(c.totalSpending)}
+                          {c.totalSpendingFormatted}
                         </td>
 
-                        {/* Tier */}
+                        {/* Status */}
                         <td className="px-4 py-4">
                           <span
-                            className={`inline-flex px-2.5 py-1.25 text-xs font-medium rounded-full ${tierConfig[c.tier].bg} ${tierConfig[c.tier].text}`}
+                            className={`inline-flex px-2.5 py-1.25 text-xs font-medium rounded-full ${
+                              c.isVerified
+                                ? "bg-success-light text-success"
+                                : "bg-surface text-text-secondary"
+                            }`}
                           >
-                            {tierConfig[c.tier].label}
+                            {c.isVerified
+                              ? "Terverifikasi"
+                              : "Belum Verifikasi"}
                           </span>
                         </td>
 
@@ -272,17 +364,19 @@ export default function CustomerList() {
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
                             <button
+                              onClick={() => setDetailTarget(c)}
                               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface transition-colors cursor-pointer"
                               title="Lihat"
                             >
                               <FiEye className="text-[15px] text-text-secondary" />
                             </button>
-                            <button
+                            <a
+                              href={`mailto:${c.email}`}
                               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-light transition-colors cursor-pointer"
                               title="Kirim Email"
                             >
                               <FiMail className="text-[15px] text-primary" />
-                            </button>
+                            </a>
                           </div>
                         </td>
                       </tr>
@@ -291,9 +385,55 @@ export default function CustomerList() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-5 py-4 border-t border-border">
+              <p className="text-sm text-text-secondary">
+                Menampilkan{" "}
+                <span className="font-medium text-text-primary">
+                  {customers.length}
+                </span>{" "}
+                dari{" "}
+                <span className="font-medium text-text-primary">
+                  {pagination.totalItems}
+                </span>{" "}
+                pelanggan
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => dispatch(setPage(pagination.currentPage - 1))}
+                  className="px-3 py-2 text-sm border border-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface"
+                >
+                  Previous
+                </button>
+
+                <span className="px-3 py-2 text-sm">
+                  {pagination.currentPage} / {pagination.totalPages || 1}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => dispatch(setPage(pagination.currentPage + 1))}
+                  className="px-3 py-2 text-sm border border-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </main>
       </div>
+
+      {detailTarget && (
+        <CustomerDetailModal
+          customer={detailTarget}
+          onClose={() => setDetailTarget(null)}
+        />
+      )}
     </div>
   );
 }
