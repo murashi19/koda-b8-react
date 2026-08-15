@@ -74,7 +74,7 @@ export default function BrowseMain() {
       return;
     }
     setParam({ page: null });
-  }, [searchQuery, currentCategory.name, setParam]);
+  }, [searchQuery, currentCategory?.name, setParam]);
 
   // PAGINATION
   const changePage = (newPage) => {
