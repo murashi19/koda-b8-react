@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { animateScroll } from "react-scroll";
 import { ChevronRight } from "lucide-react";
@@ -27,14 +27,26 @@ export default function BrowseMain() {
   const priceMax = Number(searchParams.get("priceMax")) || 20000000;
   const page = Number(searchParams.get("page")) || 1;
 
-  // FETCH PRODUCTS
+  // CATEGORY FROM SLUG (static lookup, independent of fetched products)
+  const currentCategory = useMemo(
+    () => category.find((cat) => cat.slug === slug),
+    [slug],
+  );
+
+  // FETCH PRODUCTS (uses backend search + paging)
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) {
       params.set("search[name]", searchQuery);
     }
+    if (currentCategory?.name) {
+      params.set("search[category]", currentCategory.name);
+    }
+    // Backend caps limit at 100 - large enough to cover the catalog so
+    // brand/rating/stock/price refinement and pagination below stay accurate.
+    params.set("limit", "100");
     dispatch(fetchProducts(params.toString()));
-  }, [dispatch, searchQuery]);
+  }, [dispatch, searchQuery, currentCategory?.name]);
 
   // URL PARAM HELPER
   const setParam = useCallback(
@@ -54,6 +66,15 @@ export default function BrowseMain() {
     },
     [setSearchParams],
   );
+
+  const isFirstRun = useRef(true);
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    setParam({ page: null });
+  }, [searchQuery, currentCategory.name, setParam]);
 
   // PAGINATION
   const changePage = (newPage) => {
@@ -92,23 +113,9 @@ export default function BrowseMain() {
     ].sort();
   }, [products]);
 
-  // CATEGORIES
-  const categoriesWithCount = useMemo(() => {
-    return category.map((cat) => ({
-      ...cat,
-      totalProduct: products.filter((product) => product.category === cat.name)
-        .length,
-    }));
-  }, [products]);
-
-  const selectedCategory = useMemo(() => {
-    return categoriesWithCount.find((cat) => cat.slug === slug);
-  }, [categoriesWithCount, slug]);
-
-  // FILTER PRODUCTS
   const { filteredProducts } = useProductFilter(
     products,
-    selectedCategory?.name,
+    currentCategory?.name,
     selectedBrands,
     selectedRating,
     inStock,
@@ -138,7 +145,7 @@ export default function BrowseMain() {
   }
 
   // INVALID CATEGORY
-  if (slug && !selectedCategory) {
+  if (slug && !currentCategory) {
     return (
       <div className="container-page py-20 text-center">
         <h1 className="text-2xl font-semibold">Kategori tidak ditemukan</h1>
@@ -149,7 +156,7 @@ export default function BrowseMain() {
   const pageTitle = searchQuery
     ? `Hasil pencarian untuk "${searchQuery}"`
     : slug
-      ? selectedCategory.name
+      ? currentCategory.name
       : "Semua Produk";
 
   // RENDER
@@ -165,7 +172,7 @@ export default function BrowseMain() {
           {searchQuery
             ? "Hasil Pencarian"
             : slug
-              ? selectedCategory?.name
+              ? currentCategory?.name
               : "Semua Produk"}
         </span>
       </nav>
