@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { FiX } from "react-icons/fi";
@@ -28,15 +28,11 @@ const schema = yup.object({
     .integer("Harga normal tidak boleh desimal")
     .required("Harga normal wajib diisi"),
 
-  hargaDiskon: yup
+  diskonPersen: yup
     .number()
-    .typeError("Harga diskon harus berupa angka")
-    .positive("Harga diskon harus lebih dari 0")
-    .integer("Harga diskon tidak boleh desimal")
-    .max(
-      yup.ref("hargaNormal"),
-      "Harga diskon tidak boleh lebih besar dari harga normal",
-    )
+    .typeError("Diskon harus berupa angka")
+    .min(0, "Diskon minimal 0%")
+    .max(100, "Diskon maksimal 100%")
     .nullable()
     .transform((val, orig) => (orig === "" ? null : val)),
 
@@ -106,10 +102,19 @@ export default function AddProductModal({
     });
   };
 
+  // Mode edit: turunkan persentase diskon awal dari harga normal & harga diskon yang tersimpan
+  const initialDiskonPersen =
+    initialData?.discountPrice != null && initialData?.regularPrice > 0
+      ? Math.round(
+          ((initialData.regularPrice - initialData.discountPrice) /
+            initialData.regularPrice) *
+            100,
+        )
+      : "";
+
   const {
     register,
     handleSubmit,
-    watch,
     setError,
     formState: { errors },
   } = useForm({
@@ -118,14 +123,25 @@ export default function AddProductModal({
       nama: initialData?.name ?? "",
       merek: initialData?.brand ?? "",
       hargaNormal: initialData?.regularPrice ?? "",
-      hargaDiskon: initialData?.discountPrice ?? "",
+      diskonPersen: initialDiskonPersen,
       stok: initialData?.stock ?? "",
       kategoriId: initialData?.categoryId ?? categories[0]?.id ?? "",
       deskripsi: initialData?.description ?? "",
     },
   });
 
-  const gambarFiles = watch("gambar");
+  const gambarFiles = useWatch("gambar");
+  const hargaNormalWatch = useWatch("hargaNormal");
+  const diskonPersenWatch = useWatch("diskonPersen");
+
+  // Preview harga setelah dikurangi diskon
+  const hargaSetelahDiskon = (() => {
+    const normal = Number(hargaNormalWatch);
+    const persen = Number(diskonPersenWatch);
+    if (!normal || normal <= 0 || !persen || persen <= 0) return null;
+    const hasil = Math.round(normal - (normal * persen) / 100);
+    return `Rp ${hasil.toLocaleString("id-ID")}`;
+  })();
 
   // Reset custom "gambar wajib" error tiap kali user pilih file baru
   useEffect(() => {
@@ -149,8 +165,11 @@ export default function AddProductModal({
     formData.append("name", data.nama);
     formData.append("category_id", data.kategoriId);
     formData.append("regular_price", data.hargaNormal);
-    if (data.hargaDiskon != null) {
-      formData.append("discount_price", data.hargaDiskon);
+    if (data.diskonPersen != null && data.diskonPersen > 0) {
+      const hargaDiskon = Math.round(
+        data.hargaNormal - (data.hargaNormal * data.diskonPersen) / 100,
+      );
+      formData.append("discount_price", hargaDiskon);
     }
     formData.append("stock", data.stok);
     formData.append("description", data.deskripsi);
@@ -236,15 +255,24 @@ export default function AddProductModal({
             </div>
 
             <div>
-              <Label>Harga Diskon (IDR)</Label>
+              <Label>Diskon (%)</Label>
               <input
-                {...register("hargaDiskon")}
+                {...register("diskonPersen")}
                 type="number"
                 placeholder="Kosongkan kalau tidak promo"
                 min={0}
-                className={inputClass(errors.hargaDiskon)}
+                max={100}
+                className={inputClass(errors.diskonPersen)}
               />
-              <FieldError msg={errors.hargaDiskon?.message} />
+              <FieldError msg={errors.diskonPersen?.message} />
+              {hargaSetelahDiskon && (
+                <p className="text-xs text-text-secondary mt-1">
+                  Harga setelah diskon:{" "}
+                  <span className="font-medium text-primary">
+                    {hargaSetelahDiskon}
+                  </span>
+                </p>
+              )}
             </div>
           </div>
 
