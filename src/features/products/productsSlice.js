@@ -22,6 +22,7 @@ function mapTags(tags) {
 
 export function mapProduct(p) {
   const regularPrice = Number(p.regular_price) || 0;
+
   const discountPrice =
     p.discount_price !== null &&
     p.discount_price !== undefined &&
@@ -34,18 +35,28 @@ export function mapProduct(p) {
     brand: p.brand,
     name: p.name,
     image: p.image || null,
+
     category: p.category_name || p.category?.name || "",
     categoryId: p.category_id ?? null,
+
     regularPrice,
     discountPrice,
+
     regularPriceFormatted: formatRupiah(regularPrice),
+
     discountPriceFormatted:
       discountPrice !== null ? formatRupiah(discountPrice) : null,
+
     rating: Number(p.rating) || 0,
+
     review: p.review_count ?? p.review ?? 0,
+
     tags: mapTags(p.tags),
+
     stock: Number(p.stock) || 0,
+
     description: p.detail?.description ?? "",
+
     gallery: Array.isArray(p.gallery) ? p.gallery : [],
   };
 }
@@ -74,7 +85,17 @@ export const fetchProducts = createAsyncThunk(
     try {
       const url = queryString ? `/products?${queryString}` : "/products";
       const res = await api.get(url);
-      return (res.data.data || []).map(mapProduct);
+      return {
+        items: (res.data.data || []).map(mapProduct),
+        pagination: res.data.pagination || {
+          page: 1,
+          limit: 12,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || err.message || "Gagal mengambil produk",
@@ -103,14 +124,14 @@ export const fetchProductById = createAsyncThunk(
 // CREATE PRODUCT
 export const createProduct = createAsyncThunk(
   "products/createProduct",
-  async (formData, { dispatch, rejectWithValue }) => {
+  async ({ formData, queryString = "" }, { dispatch, rejectWithValue }) => {
     try {
       await api.post("/products", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      await dispatch(fetchProducts());
+      await dispatch(fetchProducts(queryString));
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Gagal menambahkan produk",
@@ -122,14 +143,15 @@ export const createProduct = createAsyncThunk(
 // UPDATE PRODUCT
 export const editProduct = createAsyncThunk(
   "products/editProduct",
-  async ({ id, formData }, { dispatch, rejectWithValue }) => {
+  async ({ id, formData, queryString = "" }, { dispatch, rejectWithValue }) => {
     try {
       await api.patch(`/products/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      await dispatch(fetchProducts());
+
+      await dispatch(fetchProducts(queryString));
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Gagal memperbarui produk",
@@ -153,6 +175,7 @@ export const removeProduct = createAsyncThunk(
   },
 );
 
+// INITIAL STATE
 const initialState = {
   items: [],
   status: "idle",
@@ -169,11 +192,17 @@ const initialState = {
   pagination: {
     currentPage: 1,
     itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
   },
+
   mutationStatus: "idle",
   mutationError: null,
 };
 
+// SLICE
 const productSlice = createSlice({
   name: "products",
   initialState,
@@ -211,7 +240,16 @@ const productSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.items = action.payload;
+        state.items = action.payload.items;
+        const pagination = action.payload.pagination;
+        state.pagination = {
+          currentPage: pagination.page ?? 1,
+          itemsPerPage: pagination.limit ?? 10,
+          totalItems: pagination.total ?? 0,
+          totalPages: pagination.totalPages ?? 0,
+          hasNextPage: pagination.hasNextPage ?? false,
+          hasPreviousPage: pagination.hasPreviousPage ?? false,
+        };
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.status = "failed";
@@ -266,6 +304,9 @@ const productSlice = createSlice({
         state.items = state.items.filter(
           (p) => String(p.id) !== String(action.payload),
         );
+        if (state.pagination.totalItems > 0) {
+          state.pagination.totalItems -= 1;
+        }
       })
       .addCase(removeProduct.rejected, (state, action) => {
         state.mutationStatus = "failed";

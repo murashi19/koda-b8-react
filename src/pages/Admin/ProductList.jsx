@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
@@ -19,6 +19,7 @@ import {
   createProduct,
   editProduct,
   removeProduct,
+  setPage,
 } from "@/features/products/productsSlice";
 import { fetchCategories } from "@/features/categories/categoriesSlice";
 import { fetchTags } from "@/features/tags/tagsSlice";
@@ -36,9 +37,6 @@ const searchSchema = yup.object({
     .max(100, "Pencarian maksimal 100 karakter")
     .matches(/^[a-zA-Z0-9\s\-_.#]*$/, "Karakter tidak valid"),
 });
-
-// Tag produk beneran dari backend (product_tags): new, flash, best, star-seller, free-shipping
-// (config lengkapnya di features/products/data/tagConfig.js — dipakai bareng sama form AddProduct)
 
 // Delete Confirm Modal
 function DeleteModal({ product, onConfirm, onCancel, isDeleting }) {
@@ -81,6 +79,7 @@ export default function ProductList() {
     status: productsStatus,
     mutationStatus,
     mutationError,
+    pagination,
   } = useSelector((state) => state.products);
   const { items: categories, status: categoriesStatus } = useSelector(
     (state) => state.categories,
@@ -93,11 +92,19 @@ export default function ProductList() {
   const [categoryFilter, setCategoryFilter] = useState("Semua Kategori");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [modalMode, setModalMode] = useState(null); // null | "add" | { mode: "edit", data }
+  const [modalMode, setModalMode] = useState(null);
 
-  useEffect(() => {
-    if (productsStatus === "idle") dispatch(fetchProducts());
-  }, [productsStatus, dispatch]);
+  const {
+    control,
+    register,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(searchSchema),
+    defaultValues: { query: "" },
+    mode: "onChange",
+  });
+
+  const searchQuery = useWatch({ control, name: "query" }) ?? "";
 
   useEffect(() => {
     if (categoriesStatus === "idle") dispatch(fetchCategories());
@@ -107,49 +114,79 @@ export default function ProductList() {
     if (tagsStatus === "idle") dispatch(fetchTags());
   }, [tagsStatus, dispatch]);
 
+  const currentPage = pagination.currentPage;
+  const itemsPerPage = pagination.itemsPerPage;
+
+  // reset halaman
+  useEffect(() => {
+    if (currentPage !== 1) {
+      dispatch(setPage(1));
+    }
+  }, [searchQuery, categoryFilter, currentPage, dispatch]);
+
+  // fetch
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      params.set("page", currentPage);
+      params.set("limit", itemsPerPage);
+      if (searchQuery.trim()) {
+        params.set("search[name]", searchQuery.trim());
+      }
+      if (categoryFilter && categoryFilter !== "Semua Kategori") {
+        params.set("search[category]", categoryFilter);
+      }
+      dispatch(fetchProducts(params.toString()));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [dispatch, currentPage, itemsPerPage, searchQuery, categoryFilter]);
+
+  const buildQueryString = (page = currentPage) => {
+    const params = new URLSearchParams();
+    params.set("page", page);
+    params.set("limit", itemsPerPage);
+    if (searchQuery.trim()) {
+      params.set("search[name]", searchQuery.trim());
+    }
+    if (categoryFilter && categoryFilter !== "Semua Kategori") {
+      params.set("search[category]", categoryFilter);
+    }
+    return params.toString();
+  };
+
   const submitProduct = async (formData) => {
     if (modalMode === "add") {
-      const result = await dispatch(createProduct(formData));
-      if (createProduct.fulfilled.match(result)) setModalMode(null);
+      const result = await dispatch(
+        createProduct({
+          formData,
+          queryString: buildQueryString(),
+        }),
+      );
+      if (createProduct.fulfilled.match(result)) {
+        setModalMode(null);
+      }
     } else if (modalMode?.mode === "edit") {
       const result = await dispatch(
-        editProduct({ id: modalMode.data.id, formData }),
+        editProduct({
+          id: modalMode.data.id,
+          formData,
+          queryString: buildQueryString(),
+        }),
       );
-      if (editProduct.fulfilled.match(result)) setModalMode(null);
+      if (editProduct.fulfilled.match(result)) {
+        setModalMode(null);
+      }
     }
   };
 
-  const {
-    watch,
-    register,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(searchSchema),
-    defaultValues: { query: "" },
-    mode: "onChange",
-  });
-
-  const searchQuery = watch("query") ?? "";
-
-  // Filter logic
-  const filtered = products.filter((p) => {
-    const matchSearch =
-      p.name?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
-      p.brand?.toLowerCase().includes(searchQuery?.toLowerCase());
-    const matchCategory =
-      categoryFilter === "Semua Kategori" || p.category === categoryFilter;
-    return matchSearch && matchCategory;
-  });
-
-  // Summary cards dihitung dari data produk asli (bukan dummy data lagi)
   const summaryCards = [
-    { value: products.length, label: "Total Produk" },
+    { value: pagination.totalItems, label: "Total Produk" },
     {
       value: products.filter((p) => p.tags?.includes("new")).length,
       label: "Produk Baru",
     },
     {
-      value: products.filter((p) => p.stock <= 5).length,
+      value: products.filter((p) => p.stock <= 10).length,
       label: "Stok Rendah",
     },
     {
@@ -172,15 +209,12 @@ export default function ProductList() {
       />
 
       <div className="flex flex-col flex-1 min-w-0">
-        {/* Header */}
         <Header
           onToggleSidebar={() => dispatch(toggleSidebar())}
           onSearch={(query) => console.log("search:", query)}
         />
 
-        {/* Content */}
         <main className="p-8 flex flex-col gap-6 overflow-auto">
-          {/* Page Title */}
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-text-primary">
               Manajemen Produk
@@ -193,9 +227,7 @@ export default function ProductList() {
             </button>
           </div>
 
-          {/* Toolbar — Search + Filter with RHF + Yup */}
           <div className="flex gap-4 p-4 card-base shadow-sm">
-            {/* Search */}
             <div className="flex flex-col flex-1 gap-1">
               <div className="relative">
                 <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[15px]" />
@@ -212,7 +244,6 @@ export default function ProductList() {
                 </p>
               )}
             </div>
-            {/* Category Filter */}
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -224,14 +255,12 @@ export default function ProductList() {
               ))}
             </select>
 
-            {/* Filter Button */}
             <button className="flex items-center gap-2 h-12 px-4 border border-border rounded-xl bg-white text-sm text-text-primary hover:bg-surface transition-colors cursor-pointer">
               <RiFilter3Line className="text-[16px]" />
               Filter
             </button>
           </div>
 
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
             {summaryCards.map((s) => (
               <div
@@ -246,10 +275,9 @@ export default function ProductList() {
             ))}
           </div>
 
-          {/* Table */}
           <div className="card-base shadow-sm overflow-hidden">
             <div className="px-5 py-4 font-semibold text-text-primary border-b border-border">
-              {filtered.length} Produk
+              {pagination.totalItems} Produk{" "}
             </div>
 
             <div className="overflow-x-auto">
@@ -284,7 +312,7 @@ export default function ProductList() {
                         Memuat produk...
                       </td>
                     </tr>
-                  ) : filtered.length === 0 ? (
+                  ) : products.length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
@@ -294,12 +322,11 @@ export default function ProductList() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((p) => (
+                    products.map((p) => (
                       <tr
                         key={p.id}
                         className="border-t border-border hover:bg-surface transition-colors"
                       >
-                        {/* Product */}
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             {getFullImageUrl(p.image) ? (
@@ -325,14 +352,12 @@ export default function ProductList() {
                           </div>
                         </td>
 
-                        {/* Category */}
                         <td className="px-4 py-4">
                           <span className="px-2.5 py-1 bg-primary-light text-primary rounded-full text-xs font-medium">
                             {p.category}
                           </span>
                         </td>
 
-                        {/* Price */}
                         <td className="px-4 py-4">
                           <span className="block font-semibold text-primary">
                             {p.discountPriceFormatted ??
@@ -345,14 +370,12 @@ export default function ProductList() {
                           )}
                         </td>
 
-                        {/* Stock */}
                         <td
                           className={`px-4 py-4 font-medium ${p.stock <= 5 ? "text-red-500" : "text-text-primary"}`}
                         >
                           {p.stock}
                         </td>
 
-                        {/* Rating */}
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-1 text-amber-500 font-semibold text-sm">
                             <BsStarFill className="text-[13px]" />
@@ -360,7 +383,6 @@ export default function ProductList() {
                           </div>
                         </td>
 
-                        {/* Tags */}
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-1">
                             {p.tags?.map((t) => (
@@ -374,7 +396,6 @@ export default function ProductList() {
                           </div>
                         </td>
 
-                        {/* Actions */}
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
                             <button
@@ -401,6 +422,44 @@ export default function ProductList() {
                 </tbody>
               </table>
             </div>
+
+            <div className="flex items-center justify-between px-5 py-4 border-t border-border">
+              <p className="text-sm text-text-secondary">
+                Menampilkan{" "}
+                <span className="font-medium text-text-primary">
+                  {products.length}
+                </span>{" "}
+                dari{" "}
+                <span className="font-medium text-text-primary">
+                  {pagination.totalItems}
+                </span>{" "}
+                produk
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => dispatch(setPage(pagination.currentPage - 1))}
+                  className="px-3 py-2 text-sm border border-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface"
+                >
+                  Previous
+                </button>
+
+                <span className="px-3 py-2 text-sm">
+                  {pagination.currentPage} / {pagination.totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => dispatch(setPage(pagination.currentPage + 1))}
+                  className="px-3 py-2 text-sm border border-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -417,7 +476,6 @@ export default function ProductList() {
         />
       )}
 
-      {/* Delete Confirm Modal */}
       {deleteTarget && (
         <DeleteModal
           product={deleteTarget}
