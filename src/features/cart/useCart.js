@@ -12,6 +12,7 @@ export default function useCart() {
   const user = useSelector((state) => state.auth.user);
   const cart = useSelector((state) => state.cart.items);
   const status = useSelector((state) => state.cart.status);
+  const removingId = useSelector((state) => state.cart.removingId);
   const dispatch = useDispatch();
 
   const addToCart = (product, qty = 1) => {
@@ -53,6 +54,7 @@ export default function useCart() {
   return {
     cart,
     cartStatus: status,
+    removingId,
     addToCart,
     removeFromCart,
     updateCartQty,

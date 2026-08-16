@@ -23,7 +23,7 @@ export default function Cart() {
   const products = useSelector((state) => state.products.items);
   const dispatch = useDispatch();
 
-  const { cart, updateCartQty, removeFromCart } = useCart();
+  const { cart, updateCartQty, removeFromCart, removingId } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
   const formatRp = (n) => "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
@@ -104,8 +104,9 @@ export default function Cart() {
                         <button
                           type="button"
                           onClick={() => removeFromCart(item.id)}
+                          disabled={removingId === item.id}
                           aria-label="Hapus item"
-                          className="text-text-secondary hover:text-accent transition-colors duration-300"
+                          className="text-text-secondary hover:text-accent transition-colors duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-4 h-4" strokeWidth={2} />
                         </button>

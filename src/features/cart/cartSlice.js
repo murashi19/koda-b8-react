@@ -77,7 +77,7 @@ export const removeFromCart = createAsyncThunk(
 
 const cartSlice = createSlice({
   name: "cart",
-  initialState: { items: [], status: "idle", error: null },
+  initialState: { items: [], status: "idle", error: null, removingId: null },
   reducers: {
     clearCartLocal: (state) => {
       state.items = [];
@@ -102,8 +102,17 @@ const cartSlice = createSlice({
         state.status = "idle";
         state.error = null;
       })
+      .addCase(removeFromCart.pending, (state, action) => {
+        state.removingId = action.meta.arg;
+        state.error = null;
+      })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.items = state.items.filter((item) => item.id !== action.payload);
+        state.removingId = null;
+      })
+      .addCase(removeFromCart.rejected, (state, action) => {
+        state.removingId = null;
+        state.error = action.payload;
       });
   },
 });
