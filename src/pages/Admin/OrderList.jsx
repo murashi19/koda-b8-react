@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // react-icons
 import { FiSearch, FiEye } from "react-icons/fi";
-import { RiFilter3Line } from "react-icons/ri";
 
 // Components
 import Header from "@/features/admin/components/AdminHeader";
@@ -15,7 +14,9 @@ import Sidebar from "@/features/admin/components/AdminSidebar";
 import { toggleSidebar } from "@/features/admin/dashboardSlice";
 import {
   fetchAllOrdersAdmin,
+  fetchOrderStatusCounts,
   adminUpdateOrderStatus,
+  setAdminOrdersPage,
   ORDER_STATUS_LABELS,
 } from "@/features/orders/ordersSlice";
 import { PAYMENT_METHOD_LABELS } from "@/features/checkout/data/paymentMethods";
@@ -70,26 +71,24 @@ const STATUS_OPTIONS = [
   "CANCELLED",
 ];
 
-// Modal detail pesanan
-
 // Main Page
 export default function OrderList() {
   const dispatch = useDispatch();
   const { sidebarOpen } = useSelector((state) => state.dashboard);
-  const { adminOrders: orders, adminOrdersStatus: status } = useSelector(
-    (state) => state.orders,
-  );
+  const {
+    adminOrders: orders,
+    adminOrdersStatus: status,
+    adminPagination: pagination,
+    statusCounts,
+  } = useSelector((state) => state.orders);
+
   const [activeTab, setActiveTab] = useState("all");
   const [viewOrderId, setViewOrderId] = useState(null);
   const [statusUpdating, setStatusUpdating] = useState(null); // id lagi diupdate
 
-  useEffect(() => {
-    dispatch(fetchAllOrdersAdmin());
-  }, [dispatch]);
-
   const {
+    control,
     register,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(searchSchema),
@@ -97,30 +96,47 @@ export default function OrderList() {
     mode: "onChange",
   });
 
-  const searchQuery = watch("query") ?? "";
+  const searchQuery = useWatch({ control, name: "query" }) ?? "";
+  const currentPage = pagination.currentPage;
+  const itemsPerPage = pagination.itemsPerPage;
 
-  const tabCounts = tabs.reduce((acc, t) => {
-    acc[t.key] =
-      t.key === "all"
-        ? orders.length
-        : orders.filter((o) => o.status === t.key).length;
-    return acc;
-  }, {});
+  // Ambil angka count per status sekali di awal (dipakai buat badge di tab)
+  useEffect(() => {
+    dispatch(fetchOrderStatusCounts());
+  }, [dispatch]);
 
-  // Filter logic
-  const filtered = orders.filter((o) => {
-    const q = searchQuery.toLowerCase();
-    const matchSearch =
-      o.orderCode?.toLowerCase().includes(q) ||
-      o.customer?.full_name?.toLowerCase().includes(q);
-    const matchTab = activeTab === "all" || o.status === activeTab;
-    return matchSearch && matchTab;
-  });
+  // reset ke halaman 1 tiap kali pencarian atau tab status berubah
+  useEffect(() => {
+    if (currentPage !== 1) {
+      dispatch(setAdminOrdersPage(1));
+    }
+  }, [searchQuery, activeTab, currentPage, dispatch]);
+
+  // fetch daftar order (debounced), server-side paging + search + filter status
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      params.set("page", currentPage);
+      params.set("limit", itemsPerPage);
+      params.set("sortBy", "created_at");
+      params.set("sortOrder", "DESC");
+      if (searchQuery.trim()) {
+        params.set("search[keyword]", searchQuery.trim());
+      }
+      if (activeTab !== "all") {
+        params.set("status", activeTab);
+      }
+      dispatch(fetchAllOrdersAdmin(params.toString()));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [dispatch, currentPage, itemsPerPage, searchQuery, activeTab]);
 
   const handleStatusChange = async (id, newStatus) => {
     setStatusUpdating(id);
     await dispatch(adminUpdateOrderStatus({ id, status: newStatus }));
     setStatusUpdating(null);
+    // status order berubah -> angka di badge tab ikut geser
+    dispatch(fetchOrderStatusCounts());
   };
 
   return (
@@ -153,7 +169,7 @@ export default function OrderList() {
                 onClick={() => setActiveTab(t.key)}
                 className={`h-11 px-4.5 rounded-xl border text-sm cursor-pointer transition-colors ${activeTab === t.key ? "bg-primary text-white border-primary" : "bg-white text-text-primary border-border hover:bg-surface"}`}
               >
-                {t.label} ({tabCounts[t.key] ?? 0})
+                {t.label} ({statusCounts[t.key] ?? 0})
               </button>
             ))}
           </div>
@@ -167,7 +183,7 @@ export default function OrderList() {
                 <input
                   {...register("query")}
                   type="text"
-                  placeholder="Cari nomor pesanan atau nama pelanggan..."
+                  placeholder="Cari nomor pesanan, nama, atau email pelanggan..."
                   className={`w-full h-12 pl-9 pr-4 rounded-xl border text-sm text-text-primary bg-white outline-none transition-colors ${errors.query ? "border-red-400 focus:border-red-500" : "border-border focus:border-primary"}`}
                 />
               </div>
@@ -177,18 +193,12 @@ export default function OrderList() {
                 </p>
               )}
             </div>
-
-            {/* Filter Button */}
-            <button className="flex items-center gap-2 h-12 px-4 border border-border rounded-xl bg-white text-sm text-text-primary hover:bg-surface transition-colors cursor-pointer">
-              <RiFilter3Line className="text-[16px]" />
-              Filter
-            </button>
           </div>
 
           {/* Table */}
           <div className="card-base shadow-sm overflow-hidden">
             <div className="px-5 py-4 font-semibold text-text-primary border-b border-border">
-              {filtered.length} Pesanan
+              {pagination.totalItems} Pesanan
             </div>
 
             <div className="overflow-x-auto">
@@ -224,7 +234,7 @@ export default function OrderList() {
                         Memuat pesanan...
                       </td>
                     </tr>
-                  ) : filtered.length === 0 ? (
+                  ) : orders.length === 0 ? (
                     <tr>
                       <td
                         colSpan={8}
@@ -234,7 +244,7 @@ export default function OrderList() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((o) => (
+                    orders.map((o) => (
                       <tr
                         key={o.id}
                         className="border-t border-border hover:bg-surface transition-colors"
@@ -248,10 +258,10 @@ export default function OrderList() {
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1">
                             <strong className="font-medium text-text-primary">
-                              {o.customer.full_name}
+                              {o.customer?.full_name}
                             </strong>
                             <small className="text-text-secondary text-[13px]">
-                              {o.customer.email}
+                              {o.customer?.email}
                             </small>
                           </div>
                         </td>
@@ -310,6 +320,49 @@ export default function OrderList() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-5 py-4 border-t border-border">
+              <p className="text-sm text-text-secondary">
+                Menampilkan{" "}
+                <span className="font-medium text-text-primary">
+                  {orders.length}
+                </span>{" "}
+                dari{" "}
+                <span className="font-medium text-text-primary">
+                  {pagination.totalItems}
+                </span>{" "}
+                pesanan
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() =>
+                    dispatch(setAdminOrdersPage(pagination.currentPage - 1))
+                  }
+                  className="px-3 py-2 text-sm border border-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface"
+                >
+                  Previous
+                </button>
+
+                <span className="px-3 py-2 text-sm">
+                  {pagination.currentPage} / {pagination.totalPages || 1}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() =>
+                    dispatch(setAdminOrdersPage(pagination.currentPage + 1))
+                  }
+                  className="px-3 py-2 text-sm border border-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </main>

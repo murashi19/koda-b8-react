@@ -4,7 +4,6 @@ import { logout } from "@/features/auth/authSlice";
 import api from "@/lib/axios";
 
 // ---- Label status buat ditampilin ke user (fallback ke raw value kalau belum kemapping) ----
-// Match persis sama enum order_status di DB: PENDING, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED
 export const ORDER_STATUS_LABELS = {
   PENDING: "Menunggu Pembayaran",
   PAID: "Dibayar",
@@ -91,6 +90,24 @@ const initialState = {
   adminOrdersError: null,
   adminDetailsById: {}, // detail order admin (GET /admin/orders/:id)
   adminDetailStatusById: {},
+  adminPagination: {
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  },
+  statusCounts: {
+    all: 0,
+    PENDING: 0,
+    PAID: 0,
+    PROCESSING: 0,
+    SHIPPED: 0,
+    DELIVERED: 0,
+    CANCELLED: 0,
+  },
+  statusCountsStatus: "idle",
 };
 
 export const fetchOrders = createAsyncThunk(
@@ -159,13 +176,36 @@ export const payOrder = createAsyncThunk(
   },
 );
 
-// ---- Admin: semua order semua customer ----
+// ---- Admin: semua order semua customer
 export const fetchAllOrdersAdmin = createAsyncThunk(
   "orders/fetchAllOrdersAdmin",
+  async (queryString = "", { rejectWithValue }) => {
+    try {
+      const url = queryString
+        ? `/admin/orders?${queryString}`
+        : "/admin/orders";
+      const res = await api.get(url);
+      return {
+        items: (res.data.data || []).map(normalizeAdminOrderSummary),
+        pagination: res.data.pagination || {
+          currentPage: 1,
+          limit: 10,
+          totalItems: 0,
+          totalPages: 0,
+        },
+      };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  },
+);
+
+export const fetchOrderStatusCounts = createAsyncThunk(
+  "orders/fetchOrderStatusCounts",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/admin/orders");
-      return res.data.data.map(normalizeAdminOrderSummary);
+      const res = await api.get("/admin/orders/status-counts");
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
@@ -202,7 +242,11 @@ export const adminUpdateOrderStatus = createAsyncThunk(
 const ordersSlice = createSlice({
   name: "orders",
   initialState,
-  reducers: {},
+  reducers: {
+    setAdminOrdersPage: (state, action) => {
+      state.adminPagination.currentPage = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchOrders.pending, (state) => {
@@ -256,7 +300,18 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchAllOrdersAdmin.fulfilled, (state, action) => {
         state.adminOrdersStatus = "succeeded";
-        state.adminOrders = action.payload;
+        state.adminOrders = action.payload.items;
+        const p = action.payload.pagination;
+        const currentPage = p.currentPage ?? 1;
+        const totalPages = p.totalPages ?? 0;
+        state.adminPagination = {
+          currentPage,
+          itemsPerPage: p.limit ?? 10,
+          totalItems: p.totalItems ?? 0,
+          totalPages,
+          hasNextPage: currentPage < totalPages,
+          hasPreviousPage: currentPage > 1,
+        };
       })
       .addCase(fetchAllOrdersAdmin.rejected, (state, action) => {
         state.adminOrdersStatus = "failed";
@@ -282,6 +337,16 @@ const ordersSlice = createSlice({
           state.adminDetailsById[updated.id].status = updated.status;
         }
       })
+      .addCase(fetchOrderStatusCounts.pending, (state) => {
+        state.statusCountsStatus = "loading";
+      })
+      .addCase(fetchOrderStatusCounts.fulfilled, (state, action) => {
+        state.statusCountsStatus = "succeeded";
+        state.statusCounts = { ...state.statusCounts, ...action.payload };
+      })
+      .addCase(fetchOrderStatusCounts.rejected, (state) => {
+        state.statusCountsStatus = "failed";
+      })
       .addCase(logout, (state) => {
         state.orders = [];
         state.status = "idle";
@@ -291,8 +356,12 @@ const ordersSlice = createSlice({
         state.adminOrdersStatus = "idle";
         state.adminDetailsById = {};
         state.adminDetailStatusById = {};
+        state.adminPagination = initialState.adminPagination;
+        state.statusCounts = initialState.statusCounts;
+        state.statusCountsStatus = "idle";
       });
   },
 });
 
+export const { setAdminOrdersPage } = ordersSlice.actions;
 export default ordersSlice.reducer;
