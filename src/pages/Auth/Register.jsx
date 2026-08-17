@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import BgImage from "@/assets/img-regis.jpg";
 import Logo from "@/assets/logo.svg";
 import api from "@/lib/axios";
+import toast from "react-hot-toast";
 
 function Register() {
   const navigate = useNavigate();
@@ -43,13 +44,14 @@ function Register() {
           password: data.password,
         },
       });
+      toast.success(`Register Success, ${data.name || data.email}!`);
     } catch (error) {
       if (error.response?.status === 409) {
-        alert("Email sudah terdaftar");
+        toast.error("Email sudah terdaftar");
         return;
       }
 
-      alert(error.response?.data?.message || "Register gagal");
+      toast.error(error.response?.data?.message || "Register gagal");
       console.error(error);
     }
   }

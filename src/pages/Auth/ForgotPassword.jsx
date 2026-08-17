@@ -132,10 +132,12 @@ function ForgotPassword() {
         {/* INFORMATION */}
         <div className="w-md flex flex-col justify-center my-auto mx-0 text-white">
           <div className="w-18 h-18 flex rounded-lg justify-center items-center p-3 bg-[#FFFFFF1A] mb-5">
-            <span className="text-5xl">{step === 1 ? "🔐" : "🔑"}</span>
+            <span className="text-2xl text-center">
+              {step === 1 ? "🔐" : "🔑"}
+            </span>
           </div>
 
-          <div className="text-5xl font-bold mb-5">
+          <div className="text-3xl font-bold mb-5">
             {step === 1
               ? "Akun kamu aman bersama kami"
               : "Buat kata sandi baru"}
@@ -147,7 +149,7 @@ function ForgotPassword() {
               : "Gunakan kata sandi yang kuat untuk menjaga keamanan akun BeliMudah kamu."}
           </div>
 
-          <div className="flex flex-col justify-center items-start gap-5 mt-5 text-2xl">
+          <div className="flex flex-col justify-center items-start gap-5 mt-5 text-xl">
             <div className="text-center">
               <span className="font-semibold">🔒 Enkripsi SSL 256-bit</span>
             </div>
@@ -190,10 +192,10 @@ function ForgotPassword() {
           {step === 1 && (
             <>
               <div className="w-full flex flex-col justify-center items-start gap-2 mt-4 mb-2">
-                <div className="text-3xl font-bold text-black">
+                <div className="text-2xl font-bold text-black">
                   Lupa Kata Sandi?
                 </div>
-                <div className="text-xl text-text-secondary mb-1">
+                <div className="text-lg text-text-secondary mb-1">
                   Tidak perlu khawatir. Masukkan email yang terdaftar dan kami
                   akan mengirimkan tautan untuk membuat kata sandi baru.
                 </div>

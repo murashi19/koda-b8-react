@@ -20,6 +20,7 @@ import { PiEyeBold, PiEyeClosed } from "react-icons/pi";
 import BgImage from "@/assets/img-login.jpg";
 import Logo from "@/assets/logo.svg";
 import api from "@/lib/axios";
+import toast from "react-hot-toast";
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
@@ -61,6 +62,8 @@ function Login() {
         }),
       );
 
+      toast.success(`Selamat datang, ${user.full_name || user.email}!`);
+
       // Redirect berdasarkan role
       if (user.role === "ADMIN") {
         navigate("/admin/dashboard");
@@ -69,7 +72,7 @@ function Login() {
 
       navigate("/");
     } catch (error) {
-      alert(error.response?.data?.message || "Email atau password salah");
+      toast.error(error.response?.data?.message || "Email atau password salah");
       console.error(error);
     }
   }
