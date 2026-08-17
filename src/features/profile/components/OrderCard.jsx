@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { CircleCheckBig, Truck, Package, Clock, XCircle } from "lucide-react";
+import {
+  CircleCheckBig,
+  Truck,
+  Package,
+  Clock,
+  XCircle,
+  ImageIcon,
+} from "lucide-react";
 import { payOrder } from "@/features/orders/ordersSlice";
 
 const formatRp = (n) => "Rp " + Number(n).toLocaleString("id-ID");
@@ -76,11 +83,18 @@ export default function OrderCard({ order }) {
 
       {(order.items ?? []).map((p) => (
         <div key={p.productId} className="flex items-center gap-3">
-          <img
-            src={p.image}
-            alt={p.name}
-            className="w-12 h-12 rounded-lg object-cover"
-          />
+          {p.image ? (
+            <img
+              src={p.image}
+              alt={p.name}
+              className="w-12 h-12 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+              <ImageIcon className="w-10 h-10 text-gray-400" />
+            </div>
+          )}
+
           <div className="flex flex-col">
             <h3 className="text-base font-medium text-text-primary">
               {p.name}
