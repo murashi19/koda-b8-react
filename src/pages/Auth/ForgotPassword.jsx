@@ -20,7 +20,7 @@ import {
   resetPassword,
   clearForgotPasswordState,
   clearResetPasswordState,
-} from "@/store/slices/authSlice";
+} from "@/features/auth/authSlice";
 
 function ForgotPassword() {
   const dispatch = useDispatch();
