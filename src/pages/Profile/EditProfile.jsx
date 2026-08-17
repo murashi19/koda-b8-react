@@ -82,12 +82,15 @@ export default function EditProfile() {
 
   const displayAvatar = previewUrl ?? getFullImageUrl(auth?.avatar);
 
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    return dateString.split("T")[0];
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "";
-    const [day, month, year] = d.toLocaleDateString("id-ID").split("/");
-
+    const [year, month, day] = dateString.split("T")[0].split("-");
+    if (!year || !month || !day) return "";
     return `${day}-${month}-${year}`;
   };
 
@@ -121,7 +124,7 @@ export default function EditProfile() {
         name: auth.full_name || "",
         email: auth.email || "",
         phone_number: auth.phone_number || "",
-        birth_date: formatDate(auth.birth_date) || "",
+        birth_date: formatDateForInput(auth.birth_date),
         gender: auth.gender || "",
       });
     }
@@ -159,7 +162,7 @@ export default function EditProfile() {
       name: auth.full_name || "",
       email: auth.email || "",
       phone_number: auth.phone_number || "",
-      birth_date: formatDate(auth.birth_date) || "",
+      birth_date: formatDateForInput(auth.birth_date),
       gender: auth.gender || "",
     });
     setAvatarFile(null);
