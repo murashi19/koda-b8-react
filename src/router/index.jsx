@@ -35,7 +35,7 @@ import AdminDashboard from "@/pages/Admin/Dashboard";
 import ProductList from "@/pages/Admin/ProductList";
 import OrderList from "@/pages/Admin/OrderList";
 import CustomerList from "@/pages/Admin/Customers";
-// import ErrorPage from "@/pages/ErrorPage";
+import ErrorPage from "@/pages/ErrorPage";
 
 export const router = createBrowserRouter([
   {
@@ -84,10 +84,10 @@ export const router = createBrowserRouter([
         ],
       },
       // 404
-      // {
-      //   path: "*",
-      //   element: <ErrorPage />,
-      // },
+      {
+        path: "*",
+        element: <ErrorPage />,
+      },
     ],
   },
 ]);

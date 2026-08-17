@@ -35,28 +35,18 @@ export function mapProduct(p) {
     brand: p.brand,
     name: p.name,
     image: p.image || null,
-
     category: p.category_name || p.category?.name || "",
     categoryId: p.category_id ?? null,
-
     regularPrice,
     discountPrice,
-
     regularPriceFormatted: formatRupiah(regularPrice),
-
     discountPriceFormatted:
       discountPrice !== null ? formatRupiah(discountPrice) : null,
-
     rating: Number(p.rating) || 0,
-
     review: p.review_count ?? p.review ?? 0,
-
     tags: mapTags(p.tags),
-
     stock: Number(p.stock) || 0,
-
     description: p.detail?.description ?? "",
-
     gallery: Array.isArray(p.gallery) ? p.gallery : [],
   };
 }
