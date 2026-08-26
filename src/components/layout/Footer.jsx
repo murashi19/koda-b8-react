@@ -46,22 +46,22 @@ const contactItems = [
 
 export default function Footer() {
 	return (
-		<footer className='pt-20 w-full'>
-			<div className='bg-secondary w-full'>
+		<footer className='w-full max-w-full pt-20 overflow-hidden'>
+			<div className='w-full bg-secondary'>
 				{/* Heading: Feature Cards */}
-				<div className='border-b border-white/10 px-4 xl:px-0'>
-					<div className='container-page px-4 xl:px-0 flex flex-wrap justify-between py-8'>
+				<div className='border-b border-white/10'>
+					<div className='container-page grid min-w-0 grid-cols-1 gap-5 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4 xl:px-0'>
 						{featureCards.map(({ icon: Icon, title, description }) => (
 							<div
 								key={title}
-								className='flex items-center gap-3 w-full sm:w-auto mb-4 sm:mb-0'>
+								className='flex min-w-0 items-center gap-3'>
 								<div className='w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0'>
 									<Icon
 										className='text-primary'
 										strokeWidth={2}
 									/>
 								</div>
-								<div>
+								<div className='min-w-0'>
 									<p className='text-sm font-normal text-white leading-5'>{title}</p>
 									<p className='text-xs text-white/60 leading-4'>{description}</p>
 								</div>
@@ -71,9 +71,9 @@ export default function Footer() {
 				</div>
 
 				{/* Middle Footer */}
-				<div className='container-page px-4 xl:px-0 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8'>
+				<div className='container-page grid min-w-0 grid-cols-1 gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 xl:px-0'>
 					{/* Column 1: Brand */}
-					<div>
+					<div className='min-w-0'>
 						<div className='flex items-center gap-2 mb-4'>
 							<div className='w-8 h-8 rounded-lg bg-primary flex items-center justify-center'>
 								<span className='text-white font-bold text-sm'>B</span>
@@ -97,7 +97,7 @@ export default function Footer() {
 					</div>
 
 					{/* Column 2: Layanan */}
-					<div>
+					<div className='min-w-0'>
 						<h3 className='text-white text-lg font-medium mb-4'>Layanan</h3>
 						<ul className='space-y-3'>
 							{layananLinks.map((link) => (
@@ -113,7 +113,7 @@ export default function Footer() {
 					</div>
 
 					{/* Column 3: Bantuan */}
-					<div>
+					<div className='min-w-0'>
 						<h3 className='text-white text-lg font-medium mb-4'>Bantuan</h3>
 						<ul className='space-y-3'>
 							{bantuanLinks.map((link) => (
@@ -129,7 +129,7 @@ export default function Footer() {
 					</div>
 
 					{/* Column 4: Kontak & Newsletter */}
-					<div>
+					<div className='min-w-0'>
 						<h3 className='text-white text-lg font-medium mb-4'>Kontak</h3>
 						<ul className='space-y-3 mb-4'>
 							{contactItems.map(({ icon: Icon, text }) => (
@@ -140,23 +140,23 @@ export default function Footer() {
 										className='w-3.5 h-3.5 text-white/60 mt-0.5 shrink-0'
 										strokeWidth={2}
 									/>
-									<span className='text-sm text-white/60 leading-5'>{text}</span>
+									<span className='min-w-0 break-words text-sm leading-5 text-white/60'>{text}</span>
 								</li>
 							))}
 						</ul>
 
 						{/* Newsletter */}
-						<div className='bg-white/5 rounded-xl p-3'>
+						<div className='min-w-0 rounded-xl bg-white/5 p-3'>
 							<p className='text-white text-xs mb-2.5'>Newsletter</p>
-							<div className='flex items-center gap-2'>
+							<div className='flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center'>
 								<input
 									type='email'
 									placeholder='Email Kamu'
-									className='flex-1 h-9 bg-white/10 border border-white/10 rounded-md px-3 text-xs text-white placeholder-white/40 outline-none focus:border-primary transition-colors'
+									className='h-9 w-full min-w-0 flex-1 rounded-md border border-white/10 bg-white/10 px-3 text-xs text-white outline-none placeholder-white/40 transition-colors focus:border-primary'
 								/>
 								<button
 									type='button'
-									className='h-9 px-3 btn-primary text-xs font-medium rounded-md whitespace-nowrap'>
+									className='btn-primary h-9 w-full whitespace-nowrap rounded-md px-3 text-xs font-medium xl:w-auto'>
 									Langganan
 								</button>
 							</div>
@@ -165,9 +165,9 @@ export default function Footer() {
 				</div>
 
 				{/* <!-- Copyright --> */}
-				<div className='flex items-center justify-between container-page px-4 xl:px-0 py-5'>
+				<div className='container-page flex min-w-0 flex-col items-center justify-between gap-4 px-4 py-5 text-center md:flex-row md:text-left xl:px-0'>
 					<p className='text-sm text-white/60'>© 2026 BeliMudah. Seluruh hak cipta dilindungi.</p>
-					<div className='flex justify-between items-center gap-3'>
+					<div className='flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:justify-end'>
 						<p className='text-sm text-white/60'>Kebijakan Privasi</p>
 						<p className='text-sm text-white/60'>Syarat &amp; Ketentuan</p>
 						<p className='text-sm text-white/60'>Admin</p>
