@@ -49,6 +49,7 @@ export const router = createBrowserRouter([
       { path: "/auth/register", element: <Register /> },
       { path: "/auth/login", element: <Login /> },
       { path: "/auth/forgot-password", element: <ForgotPassword /> },
+      { path: "/reset-password", element: <ForgotPassword /> },
 
       // Protected (harus login)
       {
