@@ -43,6 +43,16 @@ function Login() {
     }
   }, [location.state, setValue]);
 
+  useEffect(() => {
+    if (
+      new URLSearchParams(location.search).get("reason") ===
+      "session-expired"
+    ) {
+      toast.error("Sesi kamu sudah berakhir. Silakan login kembali.");
+      navigate("/auth/login", { replace: true, state: location.state });
+    }
+  }, [location.search, location.state, navigate]);
+
   async function processLogin(data) {
     try {
       const response = await api.post("/auth/login", {
