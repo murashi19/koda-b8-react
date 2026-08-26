@@ -30,6 +30,7 @@ const dashboardSlice = createSlice({
     builder
       .addCase(fetchDashboardSummary.pending, (state) => {
         state.status = "loading";
+        state.error = null;
       })
       .addCase(fetchDashboardSummary.fulfilled, (state, action) => {
         state.status = "succeeded";

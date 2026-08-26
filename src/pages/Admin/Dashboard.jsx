@@ -74,7 +74,7 @@ const ChartTooltip = ({ active, payload, label }) => {
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { sidebarOpen, summary, status } = useSelector(
+  const { sidebarOpen, summary, status, error } = useSelector(
     (state) => state.dashboard,
   );
 
@@ -162,7 +162,14 @@ export default function AdminDashboard() {
 
           {status === "failed" && !summary && (
             <div className="card-base shadow-sm p-8 text-center text-sm text-red-500">
-              Gagal memuat data dashboard.
+              <p>{error || "Gagal memuat data dashboard."}</p>
+              <button
+                type="button"
+                onClick={() => dispatch(fetchDashboardSummary())}
+                className="mt-3 rounded-lg bg-primary px-4 py-2 text-white"
+              >
+                Coba lagi
+              </button>
             </div>
           )}
 
