@@ -26,6 +26,7 @@ const displayValueClass = "text-sm font-medium text-text-primary";
 async function updateProfile(id, formData) {
   const payload = {
     full_name: formData.name,
+    email: formData.email?.trim().toLowerCase(),
     phone_number: formData.phone_number,
     birth_date: formData.birth_date,
     gender: formData.gender,
@@ -139,7 +140,16 @@ export default function EditProfile() {
         updated = await uploadAvatar(auth.id, avatarFile);
       }
 
-      dispatch(updateUser(updated));
+      dispatch(
+        updateUser({
+          full_name: updated.full_name ?? data.name,
+          email: updated.User?.email ?? data.email.trim().toLowerCase(),
+          phone_number: updated.phone_number ?? data.phone_number,
+          birth_date: updated.birth_date ?? data.birth_date,
+          gender: updated.gender ?? data.gender,
+          avatar: updated.avatar ?? auth.avatar,
+        }),
+      );
       setAvatarFile(null);
       setNotification({
         type: "success",
