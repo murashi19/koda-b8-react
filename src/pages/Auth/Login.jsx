@@ -30,25 +30,24 @@ function Login() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setValue,
+    setError,
   } = useForm({
     resolver: yupResolver(loginSchema),
     mode: "all",
   });
   useEffect(() => {
-    if (location.state) {
+    if (location.state?.email) {
       setValue("email", location.state.email);
-      setValue("password", location.state.password);
     }
   }, [location.state, setValue]);
 
   async function processLogin(data) {
     try {
       const response = await api.post("/auth/login", {
-        email: data.email,
+        email: data.email.trim().toLowerCase(),
         password: data.password,
-        role: data.role,
       });
 
       const user = response.data.result;
@@ -72,8 +71,19 @@ function Login() {
 
       navigate("/");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Email atau password salah");
-      console.error(error);
+      const message =
+        error.response?.data?.message || "Email atau kata sandi salah";
+
+      if (error.response?.status === 401) {
+        setError(
+          "password",
+          { type: "server", message },
+          { shouldFocus: true },
+        );
+      }
+
+      toast.error(message);
+      console.error("Login gagal:", error.response?.data || error.message);
     }
   }
 
@@ -272,10 +282,11 @@ function Login() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:bg-primary-dark text-white rounded-xl py-3 font-medium transition-colors"
+              disabled={isSubmitting}
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:bg-primary-dark text-white rounded-xl py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-70"
             >
               <SquareArrowRightEnter className="w-4 h-4" />
-              Masuk
+              {isSubmitting ? "Sedang masuk..." : "Masuk"}
             </button>
           </form>
 

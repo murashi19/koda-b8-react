@@ -1,326 +1,420 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { registerSchema } from "@/features/auth/validations/registerSchema";
-
-import { CircleCheckBig, User, Lock, Mail, ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CircleCheckBig,
+  LoaderCircle,
+  Lock,
+  Mail,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 import { PiEyeBold, PiEyeClosed } from "react-icons/pi";
-import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
+
+import { registerSchema } from "@/features/auth/validations/registerSchema";
+import api from "@/lib/axios";
 import BgImage from "@/assets/img-regis.jpg";
 import Logo from "@/assets/logo.svg";
-import api from "@/lib/axios";
-import toast from "react-hot-toast";
+
+const benefits = [
+  "Akses ribuan produk dengan harga terbaik",
+  "Lacak pesanan secara real-time",
+  "Simpan wishlist & alamat favorit",
+  "Dapatkan notifikasi promo eksklusif",
+];
+
+const fieldClass = (hasError) =>
+  `group flex items-center gap-3 rounded-xl border bg-white px-3.5 py-3 transition-all focus-within:ring-4 ${
+    hasError
+      ? "border-red-400 focus-within:border-red-500 focus-within:ring-red-50"
+      : "border-border hover:border-slate-300 focus-within:border-primary focus-within:ring-primary-light"
+  }`;
 
 function Register() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const {
     register,
     handleSubmit,
-    formState: { errors },
-    reset,
+    setError,
+    control,
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(registerSchema),
-    mode: "all",
+    mode: "onTouched",
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      acceptTerms: false,
+    },
   });
+
+  const password = useWatch({ control, name: "password" });
+  const passwordChecks = [
+    { label: "6+ karakter", valid: password.length >= 6 },
+    { label: "Ada huruf", valid: /[a-zA-Z]/.test(password) },
+    { label: "Ada angka", valid: /\d/.test(password) },
+  ];
 
   async function processRegister(data) {
     try {
       await api.post("/auth/register", {
-        full_name: data.name,
-        email: data.email,
+        full_name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
         password: data.password,
       });
 
-      reset();
-
+      toast.success(`Akun ${data.name.trim()} berhasil dibuat!`);
       navigate("/auth/login", {
-        state: {
-          full_name: data.name,
-          email: data.email,
-          password: data.password,
-        },
+        replace: true,
+        state: { email: data.email.trim().toLowerCase() },
       });
-      toast.success(`Register Success, ${data.name || data.email}!`);
     } catch (error) {
+      const message =
+        error.response?.data?.message || "Pendaftaran gagal. Coba lagi.";
+
       if (error.response?.status === 409) {
-        toast.error("Email sudah terdaftar");
-        return;
+        setError(
+          "email",
+          { type: "server", message: "Email sudah terdaftar" },
+          { shouldFocus: true },
+        );
       }
 
-      toast.error(error.response?.data?.message || "Register gagal");
+      toast.error(message);
       console.error(error);
     }
   }
 
-  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
-  const toggleConfirmPasswordVisibility = () =>
-    setShowConfirmPassword((prev) => !prev);
-
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* ── Left panel: hidden on mobile, visible lg+ ── */}
-      <div
-        className="hidden lg:flex w-full lg:w-1/2 min-h-screen p-10 xl:p-16 bg-cover bg-center flex-col"
-        style={{
-          backgroundImage: `linear-gradient(rgba(37,99,235,0.88),rgba(15,23,42,0.92)), url(${BgImage})`,
-        }}
+    <main className="min-h-screen bg-white lg:grid lg:grid-cols-2">
+      <section
+        className="relative hidden min-h-screen overflow-hidden bg-cover bg-center p-10 text-white lg:flex lg:flex-col xl:p-16"
+        style={{ backgroundImage: `url(${BgImage})` }}
+        aria-label="Keunggulan BeliMudah"
       >
-        {/* Logo */}
-        <div
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-white cursor-pointer pl-2"
-        >
-          <img
-            src={Logo}
-            alt="Logo BeliMudah"
-            className="w-8 md:w-13 h-8 md:h-13 ml-0.5 md:ml-1"
-          />
-          <span className="font-semibold text-white text-xl xl:text-2xl whitespace-nowrap">
-            BeliMudah
-          </span>
-        </div>
+        <div className="absolute inset-0 bg-linear-to-br from-blue-700/95 via-blue-800/90 to-slate-950/95" />
+        <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-2xl" />
 
-        {/* Tagline + benefits */}
-        <div className="flex flex-col justify-center my-auto text-white">
-          <h1 className="text-3xl xl:text-5xl font-bold mb-8 leading-tight">
+        <Link
+          to="/"
+          className="relative z-10 flex w-fit items-center gap-3"
+          aria-label="Kembali ke beranda BeliMudah"
+        >
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/15 ring-1 ring-white/20 backdrop-blur-sm">
+            <img src={Logo} alt="" className="h-8 w-8" />
+          </span>
+          <span className="text-2xl font-semibold tracking-tight">BeliMudah</span>
+        </Link>
+
+        <div className="relative z-10 my-auto max-w-xl">
+          <h1 className="font-display text-4xl font-bold leading-tight xl:text-5xl">
             Bergabung dengan 500.000+ pelanggan puas
           </h1>
 
-          <ul className="flex flex-col gap-4 text-base xl:text-lg">
-            {[
-              "Akses ribuan produk dengan harga terbaik",
-              "Lacak pesanan secara real-time",
-              "Simpan wishlist & alamat favorit",
-              "Dapatkan notifikasi promo eksklusif",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-3">
-                <CircleCheckBig className="w-5 h-5 shrink-0 mt-0.5" />
-                <span className="text-white">{item}</span>
+          <ul className="mt-9 grid gap-4">
+            {benefits.map((item) => (
+              <li key={item} className="flex items-center gap-3 text-blue-50">
+                <CircleCheckBig className="h-5 w-5 shrink-0 text-orange-300" />
+                <span>{item}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="text-sm text-text-secondary mt-auto">
+        <p className="relative z-10 text-sm text-blue-200">
           © 2026 BeliMudah. Seluruh hak cipta dilindungi.
         </p>
-      </div>
+      </section>
 
-      {/* ── Right panel: form ── */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-5 py-10 sm:px-10 md:px-16 lg:px-10 xl:px-20">
-        {/* Mobile-only logo */}
-        <div className="flex lg:hidden items-center gap-2 mb-8 self-start">
-          <img src={Logo} alt="Logo BeliMudah" className="w-9 h-9" />
-          <span className="font-semibold text-primary text-xl">BeliMudah</span>
-        </div>
+      <section className="flex min-h-screen items-center justify-center bg-surface px-5 py-8 sm:px-10 lg:px-12 xl:px-20">
+        <div className="w-full max-w-lg">
+          <Link
+            to="/"
+            className="mb-8 flex w-fit items-center gap-2.5 lg:hidden"
+            aria-label="Kembali ke beranda BeliMudah"
+          >
+            <img src={Logo} alt="" className="h-9 w-9" />
+            <span className="text-xl font-semibold text-primary">BeliMudah</span>
+          </Link>
 
-        <div className="w-full max-w-md flex flex-col gap-3">
-          {/* Heading */}
-          <div className="mb-1">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary mb-1">
-              Buat Akun Baru
-            </h2>
-            <p className="text-sm sm:text-base text-text-secondary">
-              Sudah punya akun?{" "}
-              <Link
-                className="ml-1 text-primary font-medium hover:underline"
-                to="/auth/login"
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+            <div className="mb-7">
+              <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
+                Buat Akun Baru
+              </h2>
+              <p className="mt-2 text-sm text-text-secondary sm:text-base">
+                Sudah punya akun?{" "}
+                <Link
+                  className="font-semibold text-primary hover:text-primary-dark hover:underline"
+                  to="/auth/login"
+                >
+                  Masuk di sini
+                </Link>
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleSubmit(processRegister)}
+              className="space-y-4"
+              noValidate
+            >
+              <div>
+                <label
+                  htmlFor="name"
+                  className="mb-1.5 block text-sm font-medium text-text-primary"
+                >
+                  Nama lengkap
+                </label>
+                <div className={fieldClass(errors.name)}>
+                  <User className="h-4.5 w-4.5 shrink-0 text-text-secondary group-focus-within:text-primary" />
+                  <input
+                    id="name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Masukkan nama lengkap"
+                    aria-invalid={Boolean(errors.name)}
+                    aria-describedby={errors.name ? "name-error" : undefined}
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                    {...register("name")}
+                  />
+                </div>
+                {errors.name && (
+                  <p
+                    id="name-error"
+                    role="alert"
+                    className="mt-1.5 text-xs text-red-600"
+                  >
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-1.5 block text-sm font-medium text-text-primary"
+                >
+                  Email
+                </label>
+                <div className={fieldClass(errors.email)}>
+                  <Mail className="h-4.5 w-4.5 shrink-0 text-text-secondary group-focus-within:text-primary" />
+                  <input
+                    id="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="nama@email.com"
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                    {...register("email")}
+                  />
+                </div>
+                {errors.email && (
+                  <p
+                    id="email-error"
+                    role="alert"
+                    className="mt-1.5 text-xs text-red-600"
+                  >
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block text-sm font-medium text-text-primary"
+                >
+                  Kata sandi
+                </label>
+                <div className={fieldClass(errors.password)}>
+                  <Lock className="h-4.5 w-4.5 shrink-0 text-text-secondary group-focus-within:text-primary" />
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Buat kata sandi"
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby="password-hint password-error"
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                    {...register("password")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Tampilkan kata sandi"
+                    }
+                    aria-pressed={showPassword}
+                    className="rounded-md p-1 text-text-secondary hover:bg-slate-100 hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    {showPassword ? (
+                      <PiEyeBold className="h-4.5 w-4.5" />
+                    ) : (
+                      <PiEyeClosed className="h-4.5 w-4.5" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p
+                    id="password-error"
+                    role="alert"
+                    className="mt-1.5 text-xs text-red-600"
+                  >
+                    {errors.password.message}
+                  </p>
+                )}
+                <div
+                  id="password-hint"
+                  className="mt-2 flex flex-wrap gap-x-4 gap-y-1"
+                >
+                  {passwordChecks.map((check) => (
+                    <span
+                      key={check.label}
+                      className={`flex items-center gap-1 text-xs ${
+                        check.valid ? "text-emerald-600" : "text-text-secondary"
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {check.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="mb-1.5 block text-sm font-medium text-text-primary"
+                >
+                  Konfirmasi kata sandi
+                </label>
+                <div className={fieldClass(errors.confirmPassword)}>
+                  <Lock className="h-4.5 w-4.5 shrink-0 text-text-secondary group-focus-within:text-primary" />
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Ulangi kata sandi"
+                    aria-invalid={Boolean(errors.confirmPassword)}
+                    aria-describedby={
+                      errors.confirmPassword
+                        ? "confirm-password-error"
+                        : undefined
+                    }
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                    {...register("confirmPassword")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmPassword((value) => !value)
+                    }
+                    aria-label={
+                      showConfirmPassword
+                        ? "Sembunyikan konfirmasi kata sandi"
+                        : "Tampilkan konfirmasi kata sandi"
+                    }
+                    aria-pressed={showConfirmPassword}
+                    className="rounded-md p-1 text-text-secondary hover:bg-slate-100 hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    {showConfirmPassword ? (
+                      <PiEyeBold className="h-4.5 w-4.5" />
+                    ) : (
+                      <PiEyeClosed className="h-4.5 w-4.5" />
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p
+                    id="confirm-password-error"
+                    role="alert"
+                    className="mt-1.5 text-xs text-red-600"
+                  >
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="flex cursor-pointer items-start gap-2.5 text-sm leading-relaxed text-text-secondary">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
+                    aria-invalid={Boolean(errors.acceptTerms)}
+                    aria-describedby={
+                      errors.acceptTerms ? "terms-error" : undefined
+                    }
+                    {...register("acceptTerms")}
+                  />
+                  <span>
+                    Saya menyetujui{" "}
+                    <a
+                      href="#terms"
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Syarat &amp; Ketentuan
+                    </a>{" "}
+                    dan{" "}
+                    <a
+                      href="#privacy"
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Kebijakan Privasi
+                    </a>
+                    .
+                  </span>
+                </label>
+                {errors.acceptTerms && (
+                  <p
+                    id="terms-error"
+                    role="alert"
+                    className="mt-1.5 text-xs text-red-600"
+                  >
+                    {errors.acceptTerms.message}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3.5 font-semibold text-white shadow-sm transition hover:bg-orange-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Masuk di sini
-              </Link>
+                {isSubmitting ? (
+                  <>
+                    <LoaderCircle className="h-4.5 w-4.5 animate-spin" />
+                    Membuat akun...
+                  </>
+                ) : (
+                  <>
+                    Daftar sekarang
+                    <ArrowRight className="h-4.5 w-4.5" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-text-secondary">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              Data kamu diproses dengan aman
             </p>
           </div>
-
-          {/* Social register */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              className="flex-1 text-sm text-text-secondary rounded-xl border border-border py-2.5 hover:bg-surface transition-colors"
-            >
-              Daftar via Google
-            </button>
-            <button
-              type="button"
-              className="flex-1 text-sm text-text-secondary rounded-xl border border-border py-2.5 hover:bg-surface transition-colors"
-            >
-              Daftar via Facebook
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-sm text-text-secondary whitespace-nowrap">
-              atau daftar dengan email
-            </span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Form */}
-          <form
-            id="register-form"
-            onSubmit={handleSubmit(processRegister)}
-            className="flex flex-col gap-3"
-          >
-            {/* Nama Lengkap */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="name"
-                className="text-sm font-medium text-text-primary"
-              >
-                Nama Lengkap
-              </label>
-              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
-                <User className="w-4 h-4 text-text-secondary shrink-0" />
-                <input
-                  className="w-full outline-none border-none text-sm bg-transparent"
-                  type="text"
-                  id="name"
-                  placeholder="Nama lengkap kamu"
-                  {...register("name")}
-                />
-              </div>
-              {errors.name && (
-                <p className="text-xs text-red-500">{errors.name.message}</p>
-              )}
-            </div>
-
-            {/* Email */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-text-primary"
-              >
-                Email
-              </label>
-              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
-                <Mail className="w-4 h-4 text-text-secondary shrink-0" />
-                <input
-                  className="w-full outline-none border-none text-sm bg-transparent"
-                  type="email"
-                  id="email"
-                  placeholder="email@contoh.com"
-                  {...register("email")}
-                />
-              </div>
-              {errors.email && (
-                <p className="text-xs text-red-500">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-text-primary"
-              >
-                Kata Sandi
-              </label>
-              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
-                <Lock className="w-4 h-4 text-text-secondary shrink-0" />
-                <input
-                  className="w-full outline-none border-none text-sm bg-transparent"
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  placeholder="Minimal 6 karakter"
-                  {...register("password")}
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="shrink-0"
-                >
-                  {showPassword ? (
-                    <PiEyeBold className="w-4 h-4 text-text-secondary" />
-                  ) : (
-                    <PiEyeClosed className="w-4 h-4 text-text-secondary" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-xs text-red-500">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="confirmPassword"
-                className="text-sm font-medium text-text-primary"
-              >
-                Konfirmasi Kata Sandi
-              </label>
-              <div className="flex items-center gap-3 border border-border rounded-xl px-3 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-light transition-all">
-                <Lock className="w-4 h-4 text-text-secondary shrink-0" />
-                <input
-                  className="w-full outline-none border-none text-sm bg-transparent"
-                  type={showConfirmPassword ? "text" : "password"}
-                  id="confirmPassword"
-                  placeholder="Ulangi kata sandi"
-                  {...register("confirmPassword")}
-                />
-                <button
-                  type="button"
-                  onClick={toggleConfirmPasswordVisibility}
-                  className="shrink-0"
-                >
-                  {showConfirmPassword ? (
-                    <PiEyeBold className="w-4 h-4 text-text-secondary" />
-                  ) : (
-                    <PiEyeClosed className="w-4 h-4 text-text-secondary" />
-                  )}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-500">
-                  {errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
-
-            {/* Terms checkbox */}
-            <label className="flex items-start gap-2 text-sm text-text-secondary cursor-pointer select-none">
-              <input
-                type="checkbox"
-                className="mt-0.5 cursor-pointer rounded border-border shrink-0"
-              />
-              <span>
-                Saya menyetujui{" "}
-                <span className="text-primary hover:underline cursor-pointer">
-                  Syarat &amp; Ketentuan
-                </span>{" "}
-                dan{" "}
-                <span className="text-primary hover:underline cursor-pointer">
-                  Kebijakan Privasi
-                </span>{" "}
-                BeliMudah
-              </span>
-            </label>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white rounded-xl py-3 font-medium transition-colors mt-1"
-            >
-              Daftar Sekarang
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
-
-          {/* Footer note */}
-          <p className="text-xs text-center text-text-secondary flex items-center justify-center gap-1.5">
-            <span>🔒</span>
-            <span>Data kamu aman dan terenkripsi</span>
-          </p>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 

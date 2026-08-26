@@ -3,13 +3,18 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
-  // baseURL: `http://localhost:8081`,
 });
+
+const publicAuthEndpoints = ["/auth/login", "/auth/register"];
 
 api.interceptors.request.use(
   (config) => {
     const accessToken = store.getState().auth.token;
-    if (accessToken) {
+    const isPublicAuthRequest = publicAuthEndpoints.some((endpoint) =>
+      config.url?.startsWith(endpoint),
+    );
+
+    if (accessToken && !isPublicAuthRequest) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
