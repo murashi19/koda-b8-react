@@ -4,6 +4,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { FiX } from "react-icons/fi";
 import { tagLabel } from "@/features/products/data/tagConfig";
+import { getFullImageUrl } from "@/lib/imageUrl";
 
 // Yup Schema
 const schema = yup.object({
@@ -56,6 +57,11 @@ const schema = yup.object({
     .min(10, "Deskripsi minimal 10 karakter")
     .max(1000, "Deskripsi maksimal 1000 karakter")
     .required("Deskripsi wajib diisi"),
+
+  spesifikasi: yup
+    .string()
+    .trim()
+    .max(2000, "Spesifikasi maksimal 2000 karakter"),
 });
 
 // Field helpers
@@ -76,7 +82,6 @@ function Label({ children, required }) {
   );
 }
 
-// Modal — dipakai buat mode Tambah maupun Edit (initialData ada = mode edit)
 export default function AddProductModal({
   initialData,
   categories = [],
@@ -113,6 +118,7 @@ export default function AddProductModal({
       : "";
 
   const {
+    control,
     register,
     handleSubmit,
     setError,
@@ -127,12 +133,13 @@ export default function AddProductModal({
       stok: initialData?.stock ?? "",
       kategoriId: initialData?.categoryId ?? categories[0]?.id ?? "",
       deskripsi: initialData?.description ?? "",
+      spesifikasi: initialData?.specifications ?? "",
     },
   });
 
-  const gambarFiles = useWatch("gambar");
-  const hargaNormalWatch = useWatch("hargaNormal");
-  const diskonPersenWatch = useWatch("diskonPersen");
+  const gambarFiles = useWatch({ control, name: "gambar" });
+  const hargaNormalWatch = useWatch({ control, name: "hargaNormal" });
+  const diskonPersenWatch = useWatch({ control, name: "diskonPersen" });
 
   // Preview harga setelah dikurangi diskon
   const hargaSetelahDiskon = (() => {
@@ -159,6 +166,13 @@ export default function AddProductModal({
       });
       return;
     }
+    if (hasImage && data.gambar[0].size > 2 * 1024 * 1024) {
+      setError("gambar", {
+        type: "manual",
+        message: "Ukuran gambar maksimal 2MB",
+      });
+      return;
+    }
 
     const formData = new FormData();
     formData.append("brand", data.merek);
@@ -170,9 +184,12 @@ export default function AddProductModal({
         data.hargaNormal - (data.hargaNormal * data.diskonPersen) / 100,
       );
       formData.append("discount_price", hargaDiskon);
+    } else if (isEditMode) {
+      formData.append("discount_price", "");
     }
     formData.append("stock", data.stok);
     formData.append("description", data.deskripsi);
+    formData.append("specifications", data.spesifikasi || "");
     if (hasImage) {
       formData.append("image", data.gambar[0]);
     }
@@ -217,7 +234,7 @@ export default function AddProductModal({
           )}
 
           {/* Row: Nama + Merek */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label required>Nama Produk</Label>
               <input
@@ -241,7 +258,7 @@ export default function AddProductModal({
           </div>
 
           {/* Row: Harga Normal + Harga Diskon */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label required>Harga Normal (IDR)</Label>
               <input
@@ -277,7 +294,7 @@ export default function AddProductModal({
           </div>
 
           {/* Row: Stok + Kategori */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label required>Stok</Label>
               <input
@@ -313,7 +330,7 @@ export default function AddProductModal({
             <Label required={!isEditMode}>Gambar Produk</Label>
             {isEditMode && initialData?.image && (
               <img
-                src={initialData.image}
+                src={getFullImageUrl(initialData.image)}
                 alt={initialData.name}
                 className="w-16 h-16 rounded-lg object-cover border border-border mb-2"
               />
@@ -347,6 +364,21 @@ export default function AddProductModal({
               }`}
             />
             <FieldError msg={errors.deskripsi?.message} />
+          </div>
+
+          <div>
+            <Label>Spesifikasi</Label>
+            <textarea
+              {...register("spesifikasi")}
+              rows={4}
+              placeholder="Contoh: bahan, ukuran, warna, atau detail teknis"
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm text-text-primary bg-surface outline-none resize-none transition-colors ${
+                errors.spesifikasi
+                  ? "border-red-400 focus:border-red-500"
+                  : "border-border focus:border-primary"
+              }`}
+            />
+            <FieldError msg={errors.spesifikasi?.message} />
           </div>
 
           {/* Tag */}

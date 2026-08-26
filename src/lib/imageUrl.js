@@ -1,4 +1,7 @@
-const BACKEND_ORIGIN = "http://localhost:8081";
+const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || "").replace(
+  /\/$/,
+  "",
+);
 
 export function getFullImageUrl(image) {
   if (!image) return "";

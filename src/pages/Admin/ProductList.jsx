@@ -6,7 +6,7 @@ import * as yup from "yup";
 // react-icons
 import { BsStarFill } from "react-icons/bs";
 import { FiEdit2, FiTrash2, FiSearch } from "react-icons/fi";
-import { RiFilter3Line } from "react-icons/ri";
+import toast from "react-hot-toast";
 
 // Components
 import Header from "@/features/admin/components/AdminHeader";
@@ -77,6 +77,7 @@ export default function ProductList() {
   const {
     items: products,
     status: productsStatus,
+    error: productsError,
     mutationStatus,
     mutationError,
     pagination,
@@ -131,7 +132,7 @@ export default function ProductList() {
       params.set("page", currentPage);
       params.set("limit", itemsPerPage);
       if (searchQuery.trim()) {
-        params.set("search[name]", searchQuery.trim());
+        params.set("search[keyword]", searchQuery.trim());
       }
       if (categoryFilter && categoryFilter !== "Semua Kategori") {
         params.set("search[category]", categoryFilter);
@@ -146,7 +147,7 @@ export default function ProductList() {
     params.set("page", page);
     params.set("limit", itemsPerPage);
     if (searchQuery.trim()) {
-      params.set("search[name]", searchQuery.trim());
+      params.set("search[keyword]", searchQuery.trim());
     }
     if (categoryFilter && categoryFilter !== "Semua Kategori") {
       params.set("search[category]", categoryFilter);
@@ -164,6 +165,7 @@ export default function ProductList() {
       );
       if (createProduct.fulfilled.match(result)) {
         setModalMode(null);
+        toast.success("Produk berhasil ditambahkan");
       }
     } else if (modalMode?.mode === "edit") {
       const result = await dispatch(
@@ -175,6 +177,7 @@ export default function ProductList() {
       );
       if (editProduct.fulfilled.match(result)) {
         setModalMode(null);
+        toast.success("Produk berhasil diperbarui");
       }
     }
   };
@@ -183,23 +186,34 @@ export default function ProductList() {
     { value: pagination.totalItems, label: "Total Produk" },
     {
       value: products.filter((p) => p.tags?.includes("new")).length,
-      label: "Produk Baru",
+      label: "Produk Baru (Halaman Ini)",
     },
     {
       value: products.filter((p) => p.stock <= 10).length,
-      label: "Stok Rendah",
+      label: "Stok Rendah (Halaman Ini)",
     },
     {
       value: products.filter((p) => p.discountPrice != null).length,
-      label: "Produk Promo",
+      label: "Produk Promo (Halaman Ini)",
     },
   ];
 
   const handleDelete = async (id) => {
     setIsDeleting(true);
-    const result = await dispatch(removeProduct(id));
+    const targetPage = products.length === 1 && currentPage > 1
+      ? currentPage - 1
+      : currentPage;
+    const result = await dispatch(
+      removeProduct({ id, queryString: buildQueryString(targetPage) }),
+    );
     setIsDeleting(false);
-    if (removeProduct.fulfilled.match(result)) setDeleteTarget(null);
+    if (removeProduct.fulfilled.match(result)) {
+      if (targetPage !== currentPage) dispatch(setPage(targetPage));
+      setDeleteTarget(null);
+      toast.success("Produk berhasil dihapus");
+    } else {
+      toast.error(result.payload || "Gagal menghapus produk");
+    }
   };
 
   return (
@@ -227,7 +241,7 @@ export default function ProductList() {
             </button>
           </div>
 
-          <div className="flex gap-4 p-4 card-base shadow-sm">
+          <div className="flex flex-col gap-4 p-4 card-base shadow-sm sm:flex-row">
             <div className="flex flex-col flex-1 gap-1">
               <div className="relative">
                 <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[15px]" />
@@ -255,10 +269,6 @@ export default function ProductList() {
               ))}
             </select>
 
-            <button className="flex items-center gap-2 h-12 px-4 border border-border rounded-xl bg-white text-sm text-text-primary hover:bg-surface transition-colors cursor-pointer">
-              <RiFilter3Line className="text-[16px]" />
-              Filter
-            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -310,6 +320,22 @@ export default function ProductList() {
                         className="py-12 text-center text-sm text-text-secondary"
                       >
                         Memuat produk...
+                      </td>
+                    </tr>
+                  ) : productsStatus === "failed" ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="py-12 text-center text-sm text-red-500"
+                      >
+                        <p>{productsError || "Gagal memuat produk."}</p>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(fetchProducts(buildQueryString()))}
+                          className="mt-3 rounded-lg bg-primary px-4 py-2 text-white"
+                        >
+                          Coba lagi
+                        </button>
                       </td>
                     </tr>
                   ) : products.length === 0 ? (
@@ -447,7 +473,7 @@ export default function ProductList() {
                 </button>
 
                 <span className="px-3 py-2 text-sm">
-                  {pagination.currentPage} / {pagination.totalPages}
+                  {pagination.currentPage} / {pagination.totalPages || 1}
                 </span>
 
                 <button

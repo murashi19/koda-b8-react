@@ -34,7 +34,7 @@ export function mapProduct(p) {
     id: p.id,
     brand: p.brand,
     name: p.name,
-    image: p.image || null,
+    image: p.image || p.images?.[0]?.image_url || null,
     category: p.category_name || p.category?.name || "",
     categoryId: p.category_id ?? null,
     regularPrice,
@@ -47,7 +47,8 @@ export function mapProduct(p) {
     tags: mapTags(p.tags),
     stock: Number(p.stock) || 0,
     description: p.detail?.description ?? "",
-    gallery: Array.isArray(p.gallery) ? p.gallery : [],
+    specifications: p.detail?.specifications ?? "",
+    gallery: Array.isArray(p.images) ? p.images : [],
   };
 }
 
@@ -58,8 +59,8 @@ function mapProductDetail(p) {
     description: p.detail?.description ?? "",
     specifications: p.detail?.specifications ?? "",
     images:
-      Array.isArray(p.gallery) && p.gallery.length > 0
-        ? p.gallery.map((image) => image.image_url || image)
+      Array.isArray(p.images) && p.images.length > 0
+        ? p.images.map((image) => image.image_url || image)
         : p.images?.length
           ? p.images
           : p.image
@@ -73,13 +74,28 @@ export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
   async (queryString = "", { rejectWithValue }) => {
     try {
-      const url = queryString ? `/products?${queryString}` : "/products";
-      const res = await api.get(url);
+      const params = new URLSearchParams(queryString);
+      const requestedLimit = Number(params.get("limit")) || 100;
+      const shouldFetchAllPages = requestedLimit >= 100;
+      params.set("limit", String(requestedLimit));
+
+      let page = Number(params.get("page")) || 1;
+      let items = [];
+      let pagination = null;
+
+      do {
+        params.set("page", String(page));
+        const res = await api.get(`/products?${params.toString()}`);
+        items = items.concat(res.data.data || []);
+        pagination = res.data.pagination;
+        page += 1;
+      } while (shouldFetchAllPages && pagination?.hasNextPage);
+
       return {
-        items: (res.data.data || []).map(mapProduct),
-        pagination: res.data.pagination || {
+        items: items.map(mapProduct),
+        pagination: pagination || {
           page: 1,
-          limit: 12,
+          limit: requestedLimit,
           total: 0,
           totalPages: 0,
           hasNextPage: false,
@@ -116,12 +132,13 @@ export const createProduct = createAsyncThunk(
   "products/createProduct",
   async ({ formData, queryString = "" }, { dispatch, rejectWithValue }) => {
     try {
-      await api.post("/products", formData, {
+      const res = await api.post("/products", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      await dispatch(fetchProducts(queryString));
+      await dispatch(fetchProducts(queryString)).unwrap();
+      return mapProduct(res.data.data);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Gagal menambahkan produk",
@@ -135,13 +152,14 @@ export const editProduct = createAsyncThunk(
   "products/editProduct",
   async ({ id, formData, queryString = "" }, { dispatch, rejectWithValue }) => {
     try {
-      await api.patch(`/products/${id}`, formData, {
+      const res = await api.patch(`/products/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      await dispatch(fetchProducts(queryString));
+      await dispatch(fetchProducts(queryString)).unwrap();
+      return mapProduct(res.data.data);
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Gagal memperbarui produk",
@@ -153,9 +171,10 @@ export const editProduct = createAsyncThunk(
 // DELETE PRODUCT
 export const removeProduct = createAsyncThunk(
   "products/removeProduct",
-  async (id, { rejectWithValue }) => {
+  async ({ id, queryString = "" }, { dispatch, rejectWithValue }) => {
     try {
       await api.delete(`/products/${id}`);
+      await dispatch(fetchProducts(queryString)).unwrap();
       return id;
     } catch (err) {
       return rejectWithValue(
@@ -289,14 +308,8 @@ const productSlice = createSlice({
         state.mutationStatus = "loading";
         state.mutationError = null;
       })
-      .addCase(removeProduct.fulfilled, (state, action) => {
+      .addCase(removeProduct.fulfilled, (state) => {
         state.mutationStatus = "succeeded";
-        state.items = state.items.filter(
-          (p) => String(p.id) !== String(action.payload),
-        );
-        if (state.pagination.totalItems > 0) {
-          state.pagination.totalItems -= 1;
-        }
       })
       .addCase(removeProduct.rejected, (state, action) => {
         state.mutationStatus = "failed";
