@@ -23,22 +23,26 @@ import {
 } from "@/features/auth/authSlice";
 
 function ForgotPassword() {
+  const initialResetToken =
+    new URLSearchParams(window.location.search).get("token") || "";
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const {
     forgotPasswordLoading,
     forgotPasswordError,
+    forgotPasswordSuccess,
     resetPasswordLoading,
     resetPasswordError,
     resetPasswordSuccess,
   } = useSelector((state) => state.auth);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialResetToken ? 2 : 1);
   const [email, setEmail] = useState("");
-  const [resetToken, setResetToken] = useState("");
+  const [resetToken, setResetToken] = useState(initialResetToken);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     dispatch(clearForgotPasswordState());
@@ -56,14 +60,16 @@ function ForgotPassword() {
     if (!email.trim()) {
       return;
     }
-    const result = await dispatch(forgotPassword(email.trim()));
+    const normalizedEmail = email.trim().toLowerCase();
+    const result = await dispatch(forgotPassword(normalizedEmail));
     if (forgotPassword.fulfilled.match(result)) {
       const token = result.payload?.data?.resetToken;
-      if (!token) {
-        return;
+      if (token) {
+        setResetToken(token);
+        setStep(2);
+      } else {
+        setEmailSent(true);
       }
-      setResetToken(token);
-      setStep(2);
     }
   };
 
@@ -74,7 +80,7 @@ function ForgotPassword() {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 12) {
       return;
     }
 
@@ -84,7 +90,6 @@ function ForgotPassword() {
 
     const result = await dispatch(
       resetPassword({
-        email,
         token: resetToken,
         password,
       }),
@@ -102,6 +107,7 @@ function ForgotPassword() {
     setPassword("");
     setConfirmPassword("");
     setResetToken("");
+    setEmailSent(false);
     dispatch(clearForgotPasswordState());
     dispatch(clearResetPasswordState());
   };
@@ -231,6 +237,13 @@ function ForgotPassword() {
                   </div>
                 )}
 
+                {forgotPasswordSuccess && emailSent && (
+                  <div className="w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+                    Tautan reset sudah dikirim. Periksa inbox atau folder spam
+                    email kamu.
+                  </div>
+                )}
+
                 {/* SUBMIT */}
                 <button
                   type="submit"
@@ -316,7 +329,7 @@ function ForgotPassword() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={12}
                     />
                     <button
                       type="button"
@@ -331,7 +344,7 @@ function ForgotPassword() {
                     </button>
                   </div>
                   <span className="text-sm text-text-secondary">
-                    Minimal 6 karakter
+                    Minimal 12 karakter
                   </span>
                 </div>
 
@@ -351,7 +364,7 @@ function ForgotPassword() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={12}
                     />
                     <button
                       type="button"
@@ -399,7 +412,7 @@ function ForgotPassword() {
                   type="submit"
                   disabled={
                     resetPasswordLoading ||
-                    password.length < 6 ||
+                    password.length < 12 ||
                     password !== confirmPassword
                   }
                   className="w-full flex justify-center items-center bg-primary rounded-lg p-3 hover:bg-primary-dark gap-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"

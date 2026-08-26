@@ -14,7 +14,7 @@ export const forgotPassword = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
-          "Gagal mengirim permintaan reset password",
+          "Layanan reset password sedang tidak tersedia",
       );
     }
   },
