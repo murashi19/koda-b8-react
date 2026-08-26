@@ -21,6 +21,7 @@ import BgImage from "@/assets/img-login.jpg";
 import Logo from "@/assets/logo.svg";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import { hasRole } from "@/features/auth/roles";
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
@@ -74,7 +75,7 @@ function Login() {
       toast.success(`Selamat datang, ${user.full_name || user.email}!`);
 
       // Redirect berdasarkan role
-      if (user.role === "ADMIN") {
+      if (hasRole(user, "ADMIN")) {
         navigate("/admin/dashboard");
         return;
       }

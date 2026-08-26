@@ -1,19 +1,24 @@
 import { BsBellFill } from "react-icons/bs";
 import { FiMenu } from "react-icons/fi";
+import { useSelector } from "react-redux";
 
 export default function Header({
   onToggleSidebar,
   title = "Admin",
-  avatarInitial = "A",
-  adminName = "Admin",
 }) {
+  const user = useSelector((state) => state.auth.user);
+  const adminName = user?.full_name || user?.email || "Admin";
+  const avatarInitial = adminName.charAt(0).toUpperCase();
+
   return (
     <>
       <header className="h-18 flex shrink-0 items-center justify-between border-b border-border bg-white px-4 sm:px-6 lg:px-8">
         {/* Left */}
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={onToggleSidebar}
+            aria-label="Buka atau tutup sidebar"
             className="p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
           >
             <FiMenu className="text-[18px]" />
@@ -24,7 +29,7 @@ export default function Header({
         {/* Right */}
         <div className="flex items-center gap-4">
           {/* Notification */}
-          <button className="relative p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer">
+          <button type="button" aria-label="Notifikasi" className="relative p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer">
             <BsBellFill className="text-[18px] text-text-secondary" />
             <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full" />
           </button>

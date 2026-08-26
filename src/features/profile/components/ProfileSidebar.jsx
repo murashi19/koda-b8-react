@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/features/auth/authSlice";
 import { clearWishlistState } from "@/features/wishlist/wishlistSlice";
 import { getFullImageUrl } from "@/lib/imageUrl";
+import { hasRole } from "@/features/auth/roles";
 
 function useProfileStats() {
   const orders = useSelector((state) => state.orders.orders);
@@ -26,7 +27,7 @@ export default function ProfileSidebar({ activeNav }) {
   const dispatch = useDispatch();
 
   const character = auth?.full_name?.charAt(0).toUpperCase();
-  const isAdmin = auth?.role === "ADMIN";
+  const isAdmin = hasRole(auth, "ADMIN");
   const avatarUrl = getFullImageUrl(auth?.avatar);
 
   // Item dengan adminOnly: true cuma ditampilkan kalau user-nya admin
