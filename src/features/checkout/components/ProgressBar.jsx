@@ -2,7 +2,7 @@ const steps = ["Pengiriman", "Pembayaran", "Konfirmasi"];
 
 export default function ProgressBar({ currentStep }) {
 	return (
-		<div className='flex items-center justify-center gap-0 mb-2'>
+		<div className='flex w-full min-w-0 items-center justify-center gap-0 mb-2 px-1'>
 			{steps.map((label, i) => {
 				const stepNum = i + 1;
 				const isDone = stepNum < currentStep;
@@ -21,7 +21,7 @@ export default function ProgressBar({ currentStep }) {
 						</div>
 
 						{/* Connector line (not after last step) */}
-						{i < steps.length - 1 && <div className={`w-40 h-0.75 mx-3 mb-5 ${isDone ? "bg-success" : "bg-border"}`} />}
+						{i < steps.length - 1 && <div className={`h-0.75 w-8 min-w-0 flex-1 mx-1 sm:w-20 sm:flex-none sm:mx-2 md:w-40 md:mx-3 mb-5 ${isDone ? "bg-success" : "bg-border"}`} />}
 					</div>
 				);
 			})}

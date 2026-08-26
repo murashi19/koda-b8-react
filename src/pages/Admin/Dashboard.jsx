@@ -140,9 +140,9 @@ export default function AdminDashboard() {
           onSearch={(query) => console.log("search:", query)}
         />
 
-        <main className="p-8 flex flex-col gap-6 overflow-auto">
+        <main className="flex min-w-0 flex-col gap-6 overflow-auto p-4 sm:p-6 lg:p-8">
           {/* Page Title */}
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
             <div>
               <h1 className="text-3xl font-bold text-text-primary">
                 Dashboard
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
                 Selamat datang kembali! Ini ringkasan bisnis hari ini.
               </p>
             </div>
-            <time className="text-sm text-text-secondary mt-1">{today}</time>
+            <time className="shrink-0 text-sm text-text-secondary sm:mt-1">{today}</time>
           </div>
 
           {status === "loading" && !summary && (

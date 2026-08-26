@@ -208,7 +208,7 @@ export default function CustomerList() {
         />
 
         {/* Content */}
-        <main className="p-8 flex flex-col gap-6 overflow-auto">
+        <main className="flex min-w-0 flex-col gap-6 overflow-auto p-4 sm:p-6 lg:p-8">
           {/* Page Title */}
           <h1 className="text-3xl font-bold text-text-primary">
             Manajemen Pelanggan

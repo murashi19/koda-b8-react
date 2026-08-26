@@ -21,9 +21,9 @@ const categoryIcons = {
 
 function NavHeader() {
   return (
-    <nav className="w-full border-b border-border bg-white hidden md:block">
-      <div className="flex items-center justify-center container-page px-4 xl:px-0">
-        <ul className="flex items-center gap-8 text-sm text-text-secondary py-3">
+    <nav className="hidden w-full border-b border-border bg-white lg:block">
+      <div className="container-page flex min-w-0 items-center justify-center px-4 xl:px-0">
+        <ul className="flex min-w-0 items-center justify-center gap-4 py-3 text-sm text-text-secondary xl:gap-8">
           <li>
             <Link
               to="/browse-product"

@@ -68,7 +68,7 @@ function MainHeader() {
 
   return (
     <div className="w-full bg-white">
-      <div className="container-page flex items-center justify-between gap-6 py-4 px-4 xl:px-0">
+      <div className="container-page flex min-w-0 items-center justify-between gap-2 px-4 py-4 sm:gap-4 lg:gap-6 xl:px-0">
         {/* LOGO */}
         <Link className="shrink-0 flex items-center cursor-pointer" to="/">
           <img className="w-32 md:w-38" src={LogoHeader} alt="Logo BeliMudah" />
@@ -217,7 +217,7 @@ function MainHeader() {
           <button
             id="all-icon"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="flex md:hidden w-10 h-10 items-center justify-center rounded-full text-text-secondary hover:text-primary hover:bg-primary-light transition-colors duration-300 cursor-pointer"
+            className="flex lg:hidden w-10 h-10 items-center justify-center rounded-full text-text-secondary hover:text-primary hover:bg-primary-light transition-colors duration-300 cursor-pointer"
           >
             <TextAlignJustify className="w-5 h-5" />
           </button>
@@ -226,7 +226,7 @@ function MainHeader() {
 
       {/* Mobile search + menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border px-4 py-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 border-t border-border px-4 py-4 lg:hidden">
           <form
             onSubmit={handleSearch}
             className="w-full flex items-center border border-border rounded-full bg-surface"

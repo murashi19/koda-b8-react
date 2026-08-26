@@ -74,13 +74,13 @@ export default function Cart() {
           </div>
         ) : (
           /* ── Main Grid ── */
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_394px] gap-6 items-start">
+          <div className="grid min-w-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,394px)] gap-6 items-start">
             {/* Left Column */}
-            <div className="flex flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-4">
               {/* Card Item — looped dari cart */}
               {cart.map((item) => (
                 <div key={item.id} className="card-base p-4">
-                  <div className="flex gap-4">
+                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
                     {/* Product Image */}
                     <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0">
                       {item.image ? (
@@ -95,7 +95,7 @@ export default function Cart() {
                     </div>
 
                     {/* Product Info */}
-                    <div className="flex-1 flex flex-col gap-1.5">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       {/* Title + Delete */}
                       <div className="flex items-start justify-between">
                         <span className="text-base font-medium text-text-primary leading-6">
@@ -118,7 +118,7 @@ export default function Cart() {
                       </p>
 
                       {/* Quantity + Price */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center border border-border rounded-xl overflow-hidden w-37.5">
                           <button
                             type="button"
@@ -183,7 +183,7 @@ export default function Cart() {
                     value={voucher}
                     onChange={(e) => setVoucher(e.target.value)}
                     placeholder="Masukkan Kode Promo"
-                    className="flex-1 h-10.5 rounded-xl border border-border bg-surface px-4 text-sm outline-none focus:border-primary transition-colors duration-300"
+                    className="min-w-0 flex-1 h-10.5 rounded-xl border border-border bg-surface px-4 text-sm outline-none focus:border-primary transition-colors duration-300"
                   />
                   <button
                     type="button"

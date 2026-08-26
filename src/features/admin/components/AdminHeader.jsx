@@ -9,7 +9,7 @@ export default function Header({
 }) {
   return (
     <>
-      <header className="h-18 bg-white border-b border-border flex items-center justify-between px-8 shrink-0">
+      <header className="h-18 flex shrink-0 items-center justify-between border-b border-border bg-white px-4 sm:px-6 lg:px-8">
         {/* Left */}
         <div className="flex items-center gap-4">
           <button
@@ -34,7 +34,7 @@ export default function Header({
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
               {avatarInitial}
             </div>
-            <span className="text-sm font-medium text-text-primary">
+            <span className="hidden text-sm font-medium text-text-primary sm:block">
               {adminName}
             </span>
           </div>

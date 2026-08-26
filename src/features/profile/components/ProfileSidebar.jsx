@@ -57,11 +57,11 @@ export default function ProfileSidebar({ activeNav }) {
             <span className="text-xl font-bold text-primary">{character}</span>
           )}
         </div>
-        <div className="flex flex-col items-center gap-1">
-          <h2 className="text-base font-semibold text-text-primary">
+        <div className="w-full min-w-0 flex flex-col items-center gap-1">
+          <h2 className="max-w-full truncate text-base font-semibold text-text-primary">
             {auth?.full_name}
           </h2>
-          <span className="text-xs text-text-secondary">{auth?.email}</span>
+          <span className="max-w-full truncate text-xs text-text-secondary">{auth?.email}</span>
         </div>
         <div className="w-full flex justify-center gap-6 pt-3 border-t border-border">
           <div className="flex flex-col items-center gap-1">

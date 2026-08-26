@@ -41,8 +41,8 @@ const searchSchema = yup.object({
 // Delete Confirm Modal
 function DeleteModal({ product, onConfirm, onCancel, isDeleting }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-100 flex flex-col gap-4 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
         <h3 className="text-base font-semibold text-text-primary">
           Hapus Produk?
         </h3>
@@ -214,8 +214,8 @@ export default function ProductList() {
           onSearch={(query) => console.log("search:", query)}
         />
 
-        <main className="p-8 flex flex-col gap-6 overflow-auto">
-          <div className="flex items-center justify-between">
+        <main className="flex min-w-0 flex-col gap-6 overflow-auto p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <h1 className="text-3xl font-bold text-text-primary">
               Manajemen Produk
             </h1>
