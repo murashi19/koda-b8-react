@@ -329,7 +329,7 @@ function ForgotPassword() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={12}
+                      minLength={8}
                     />
                     <button
                       type="button"
@@ -344,7 +344,7 @@ function ForgotPassword() {
                     </button>
                   </div>
                   <span className="text-sm text-text-secondary">
-                    Minimal 12 karakter
+                    Minimal 8 karakter
                   </span>
                 </div>
 
@@ -364,7 +364,7 @@ function ForgotPassword() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      minLength={12}
+                      minLength={8}
                     />
                     <button
                       type="button"
@@ -412,7 +412,7 @@ function ForgotPassword() {
                   type="submit"
                   disabled={
                     resetPasswordLoading ||
-                    password.length < 12 ||
+                    password.length < 8 ||
                     password !== confirmPassword
                   }
                   className="w-full flex justify-center items-center bg-primary rounded-lg p-3 hover:bg-primary-dark gap-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
