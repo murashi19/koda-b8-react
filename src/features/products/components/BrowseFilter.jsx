@@ -37,21 +37,28 @@ export default function BrowseFilter({
         <h3 className="font-semibold text-sm text-text-primary mb-3">
           Harga Maksimal
         </h3>
-        <input
-          type="range"
-          min="0"
-          max="20000000"
-          step="50000"
-          value={priceMax}
-          onChange={(e) => onPriceChange(Number(e.target.value))}
-          className="w-full accent-primary"
-        />
-
-        <div className="flex justify-between text-xs text-text-secondary mt-1">
-          <span>Rp 0</span>
-
-          <span>Rp {Number(priceMax).toLocaleString("id-ID")}</span>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-secondary">
+            Rp
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="1000"
+            inputMode="numeric"
+            value={priceMax ?? ""}
+            onChange={(e) => {
+              const value = e.target.value;
+              onPriceChange(value === "" ? null : Number(value));
+            }}
+            placeholder="Tanpa batas"
+            aria-label="Harga maksimal"
+            className="h-11 w-full rounded-xl border border-border bg-white pl-10 pr-3 text-sm text-text-primary outline-none transition-colors focus:border-primary"
+          />
         </div>
+        <p className="mt-1.5 text-xs text-text-secondary">
+          Kosongkan untuk menampilkan semua harga.
+        </p>
       </div>
 
       {/* MEREK */}

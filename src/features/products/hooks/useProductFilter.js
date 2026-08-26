@@ -6,7 +6,7 @@ export default function useProductFilter(
   selectedBrands = [],
   selectedRating = null,
   inStock = false,
-  priceMax = 20000000,
+  priceMax = null,
 ) {
   const filteredProducts = useMemo(() => {
     return (
@@ -16,12 +16,10 @@ export default function useProductFilter(
           if (!category) return true;
           return p.category === category;
         })
-        // PRICE
+        // PRICE — null berarti semua harga ditampilkan.
         .filter((p) => {
-          const currentPrice =
-            p.discountPrice !== null && p.discountPrice !== undefined
-              ? p.discountPrice
-              : p.regularPrice;
+          if (priceMax === null) return true;
+          const currentPrice = p.discountPrice ?? p.regularPrice;
           return Number(currentPrice) <= Number(priceMax);
         })
         // BRAND
@@ -46,7 +44,14 @@ export default function useProductFilter(
           return Number(p.stock) > 0;
         })
     );
-  }, [products, category, selectedBrands, selectedRating, inStock, priceMax]);
+  }, [
+    products,
+    category,
+    selectedBrands,
+    selectedRating,
+    inStock,
+    priceMax,
+  ]);
 
   return {
     filteredProducts,

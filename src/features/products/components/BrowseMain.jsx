@@ -10,7 +10,9 @@ import useProductFilter from "@/features/products/hooks/useProductFilter";
 import usePagination from "@/features/products/hooks/usePagination";
 
 import { fetchProducts } from "@/features/products/productsSlice";
+import { fetchCategories } from "@/features/categories/categoriesSlice";
 import category from "@/features/products/data/category";
+import { categorySlug } from "@/utils/category";
 
 export default function BrowseMain() {
   const { slug } = useParams();
@@ -18,32 +20,47 @@ export default function BrowseMain() {
   const dispatch = useDispatch();
   const products = useSelector((state) => state.products.items);
   const status = useSelector((state) => state.products.status);
+  const error = useSelector((state) => state.products.error);
+  const backendCategories = useSelector((state) => state.categories.items);
+  const categoryStatus = useSelector((state) => state.categories.status);
 
   // URL STATE
   const searchQuery = searchParams.get("q") ?? "";
   const selectedBrands = searchParams.getAll("brand");
   const selectedRating = Number(searchParams.get("rating")) || null;
   const inStock = searchParams.get("stock") === "1";
-  const priceMax = Number(searchParams.get("priceMax")) || 20000000;
+  const priceParam = searchParams.get("priceMax");
+  const priceMax = priceParam ? Number(priceParam) : null;
   const page = Number(searchParams.get("page")) || 1;
 
-  // CATEGORY FROM SLUG (static lookup, independent of fetched products)
-  const currentCategory = useMemo(
-    () => category.find((cat) => cat.slug === slug),
-    [slug],
-  );
+  useEffect(() => {
+    if (categoryStatus === "idle") dispatch(fetchCategories());
+  }, [categoryStatus, dispatch]);
+
+  const currentCategory = useMemo(() => {
+    if (!slug) return null;
+    const staticCategory = category.find((item) => item.slug === slug);
+    const backendCategory = backendCategories.find(
+      (item) =>
+        categorySlug(item.name) === slug || item.name === staticCategory?.name,
+    );
+    if (!backendCategory) return staticCategory;
+    return {
+      ...staticCategory,
+      ...backendCategory,
+      slug,
+    };
+  }, [backendCategories, slug]);
 
   // FETCH PRODUCTS (uses backend search + paging)
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) {
-      params.set("search[name]", searchQuery);
+      params.set("search[keyword]", searchQuery.trim());
     }
     if (currentCategory?.name) {
       params.set("search[category]", currentCategory.name);
     }
-    // Backend caps limit at 100 - large enough to cover the catalog so
-    // brand/rating/stock/price refinement and pagination below stay accurate.
     params.set("limit", "100");
     dispatch(fetchProducts(params.toString()));
   }, [dispatch, searchQuery, currentCategory?.name]);
@@ -139,13 +156,20 @@ export default function BrowseMain() {
   if (status === "failed") {
     return (
       <div className="container-page py-20 text-center text-red-500">
-        Gagal memuat produk. Coba muat ulang halaman.
+        <p>{error || "Gagal memuat produk."}</p>
+        <button
+          type="button"
+          onClick={() => dispatch(fetchProducts())}
+          className="mt-3 rounded-lg bg-primary px-4 py-2 text-white"
+        >
+          Coba lagi
+        </button>
       </div>
     );
   }
 
   // INVALID CATEGORY
-  if (slug && !currentCategory) {
+  if (slug && categoryStatus !== "loading" && !currentCategory) {
     return (
       <div className="container-page py-20 text-center">
         <h1 className="text-2xl font-semibold">Kategori tidak ditemukan</h1>
@@ -206,7 +230,7 @@ export default function BrowseMain() {
           priceMax={priceMax}
           onPriceChange={(value) =>
             setParam({
-              priceMax: value === 20000000 ? null : value,
+              priceMax: value,
               page: "1",
             })
           }

@@ -35,6 +35,8 @@ import {
 // Utils / Data
 import getProductBadge from "@/utils/getProductBadge";
 import category from "@/features/products/data/category";
+import { getFullImageUrl } from "@/lib/imageUrl";
+import { categorySlug as createCategorySlug } from "@/utils/category";
 // DELIVERY INF
 
 const deliveryInfo = [
@@ -56,7 +58,6 @@ const deliveryInfo = [
 ];
 // TAB
 
-const tabs = ["Deskripsi", "Spesifikasi", "Ulasan (2)"];
 // MAIN PAG
 
 export default function DetailPage() {
@@ -73,7 +74,10 @@ export default function DetailPage() {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
 
-  const [quantity, setQuantity] = useState(1);
+  const [quantitySelection, setQuantitySelection] = useState({
+    productId: null,
+    value: 1,
+  });
   const [activeTab, setActiveTab] = useState("Deskripsi");
   const [selectedImg, setSelectedImg] = useState(null);
 
@@ -148,30 +152,41 @@ export default function DetailPage() {
   const wishlisted = isWishlisted(product.id);
   const badge = getProductBadge(product);
   const tags = Array.isArray(product.tags) ? product.tags : [];
+  const tabs = ["Deskripsi", "Spesifikasi", `Ulasan (${product.review})`];
+  const quantity =
+    String(quantitySelection.productId) === String(product.id)
+      ? quantitySelection.value
+      : 1;
 
   // NORMALIZE GALLERY
 
   const galleryImages = [];
 
   if (product.image) {
-    galleryImages.push(product.image);
+    galleryImages.push(getFullImageUrl(product.image));
   }
 
   if (Array.isArray(product.images)) {
     product.images.forEach((image) => {
       const imageUrl = typeof image === "string" ? image : image?.image_url;
 
-      if (imageUrl && !galleryImages.includes(imageUrl)) {
-        galleryImages.push(imageUrl);
+      const fullImageUrl = getFullImageUrl(imageUrl);
+      if (fullImageUrl && !galleryImages.includes(fullImageUrl)) {
+        galleryImages.push(fullImageUrl);
       }
     });
   }
 
-  const displayedImg = selectedImg || galleryImages[0] || product.image || null;
+  const displayedImg =
+    (selectedImg?.productId === product.id ? selectedImg.url : null) ||
+    galleryImages[0] ||
+    getFullImageUrl(product.image) ||
+    null;
 
   // CATEGORY
   const productCategory = category.find((cat) => cat.name === product.category);
-  const categorySlug = productCategory?.slug ?? "";
+  const categorySlug =
+    productCategory?.slug ?? createCategorySlug(product.category);
 
   // RELATED PRODUCTS
   const relatedProducts = items
@@ -194,10 +209,16 @@ export default function DetailPage() {
     }
   };
   const decreaseQuantity = () => {
-    setQuantity((current) => Math.max(1, current - 1));
+    setQuantitySelection({
+      productId: product.id,
+      value: Math.max(1, quantity - 1),
+    });
   };
   const increaseQuantity = () => {
-    setQuantity((current) => Math.min(product.stock, current + 1));
+    setQuantitySelection({
+      productId: product.id,
+      value: Math.min(product.stock, quantity + 1),
+    });
   };
 
   return (
@@ -283,7 +304,9 @@ export default function DetailPage() {
                   <button
                     key={`${image}-${index}`}
                     type="button"
-                    onClick={() => setSelectedImg(image)}
+                    onClick={() =>
+                      setSelectedImg({ productId: product.id, url: image })
+                    }
                     className={`
                       w-16 h-16 shrink-0 rounded-xl overflow-hidden
                       border-2 transition-colors duration-300

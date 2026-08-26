@@ -4,6 +4,7 @@ import StarRating from "@/components/common/StarsRate";
 import useCart from "@/features/cart/useCart";
 import useWishlist from "@/features/wishlist/useWishlist";
 import getProductBadge from "@/utils/getProductBadge";
+import { getFullImageUrl } from "@/lib/imageUrl";
 
 const BADGE_COLOR = {
   discount: "bg-accent", // merah
@@ -19,12 +20,9 @@ export default function ProductCard({ product }) {
   const { toggleWishlist, isWishlisted } = useWishlist();
 
   const wishlisted = isWishlisted(product.id);
-  const normalizedProduct = {
-    ...product,
-    tags: product.tags?.map((tag) => tag.name) ?? [],
-  };
-
-  const badge = getProductBadge(normalizedProduct);
+  const badge = getProductBadge(product);
+  const imageUrl = getFullImageUrl(product.image);
+  const isOutOfStock = Number(product.stock) <= 0;
 
   const handleToggleWishlist = (e) => {
     e.preventDefault();
@@ -35,7 +33,7 @@ export default function ProductCard({ product }) {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product);
+    if (!isOutOfStock) addToCart(product);
   };
 
   return (
@@ -44,9 +42,9 @@ export default function ProductCard({ product }) {
       className="group flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
     >
       <div className="relative aspect-square overflow-hidden bg-surface">
-        {product.image ? (
+        {imageUrl ? (
           <img
-            src={product.image}
+            src={imageUrl}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -65,6 +63,9 @@ export default function ProductCard({ product }) {
         <button
           type="button"
           onClick={handleToggleWishlist}
+          aria-label={
+            wishlisted ? "Hapus dari wishlist" : "Tambahkan ke wishlist"
+          }
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white shadow-sm transition-colors duration-300 cursor-pointer"
         >
           <Heart
@@ -86,16 +87,16 @@ export default function ProductCard({ product }) {
             {product.rating}
           </span>
           <span className="text-xs text-text-secondary">
-            ({product.review_count ?? 0})
+            ({product.review ?? 0})
           </span>
         </div>
 
-        {product.discount_price ? (
+        {product.discountPrice !== null ? (
           <div className="flex items-center gap-1.5 mt-auto">
             <span className="text-xs md:text-sm font-bold text-primary">
               {product.discountPriceFormatted}
             </span>
-            {product.regular_price && (
+            {product.regularPrice > 0 && (
               <span className="text-xs md:text-sm text-text-secondary line-through">
                 {product.regularPriceFormatted}
               </span>
@@ -112,10 +113,11 @@ export default function ProductCard({ product }) {
         <button
           type="button"
           onClick={handleAddToCart}
-          className="mt-1 flex items-center justify-center gap-2 w-full h-9 rounded-lg btn-primary text-sm font-medium cursor-pointer"
+          disabled={isOutOfStock}
+          className="mt-1 flex items-center justify-center gap-2 w-full h-9 rounded-lg btn-primary text-sm font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
-          Add to Cart
+          {isOutOfStock ? "Stok Habis" : "Tambah ke Keranjang"}
         </button>
       </div>
     </Link>
